@@ -1,7 +1,7 @@
 package fugue
 
 import (
-	"fmt"
+	"errors"
 	"os"
 
 	"github.com/fugue/fugue-client/client"
@@ -18,13 +18,30 @@ const (
 	DefaultBase = "v0"
 )
 
-func mustGetEnv(name string) string {
-	value := os.Getenv(name)
-	if value == "" {
-		fmt.Fprintf(os.Stderr, "Missing environment variable: %s\n", name)
-		os.Exit(1)
+// Client supports interactions with the Fugue API
+type Client struct {
+	*client.Fugue
+	Auth runtime.ClientAuthInfoWriter
+}
+
+func getFugueClient(clientID, clientSecret string) (*Client, error) {
+
+	if clientID == "" {
+		return nil, errors.New("FUGUE_API_ID is not set")
 	}
-	return value
+
+	if clientSecret == "" {
+		return nil, errors.New("FUGUE_API_SECRET is not set")
+	}
+
+	host := getEnvWithDefault("FUGUE_API_HOST", DefaultHost)
+	base := getEnvWithDefault("FUGUE_API_BASE", DefaultBase)
+
+	transport := httptransport.New(host, base, []string{"https"})
+	apiClient := client.New(transport, strfmt.Default)
+	auth := httptransport.BasicAuth(clientID, clientSecret)
+
+	return &Client{Fugue: apiClient, Auth: auth}, nil
 }
 
 func getEnvWithDefault(name, defaultValue string) string {
@@ -33,20 +50,4 @@ func getEnvWithDefault(name, defaultValue string) string {
 		return defaultValue
 	}
 	return value
-}
-
-func getClient() (*client.Fugue, runtime.ClientAuthInfoWriter) {
-
-	clientID := mustGetEnv("FUGUE_API_ID")
-	clientSecret := mustGetEnv("FUGUE_API_SECRET")
-
-	host := getEnvWithDefault("FUGUE_API_HOST", DefaultHost)
-	base := getEnvWithDefault("FUGUE_API_BASE", DefaultBase)
-
-	transport := httptransport.New(host, base, []string{"https"})
-	apiClient := client.New(transport, strfmt.Default)
-
-	auth := httptransport.BasicAuth(clientID, clientSecret)
-
-	return apiClient, auth
 }

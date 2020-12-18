@@ -36,8 +36,8 @@ func dataSourceAwsTypes() *schema.Resource {
 func dataSourceAwsTypesRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 
 	var diags diag.Diagnostics
+	client := m.(*Client)
 
-	client, auth := getClient()
 	params := metadata.NewGetResourceTypesParams()
 
 	params.Provider = "aws"
@@ -51,7 +51,7 @@ func dataSourceAwsTypesRead(ctx context.Context, d *schema.ResourceData, m inter
 	}
 	params.Region = &regionForTypes
 
-	resp, err := client.Metadata.GetResourceTypes(params, auth)
+	resp, err := client.Metadata.GetResourceTypes(params, client.Auth)
 	if err != nil {
 		return diag.FromErr(err)
 	}

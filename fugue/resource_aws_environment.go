@@ -36,7 +36,7 @@ func resourceAwsEnvironment() *schema.Resource {
 			},
 			"regions": &schema.Schema{
 				Type:     schema.TypeSet,
-				Optional: true,
+				Required: true,
 				MaxItems: 100,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
@@ -76,14 +76,12 @@ func resourceAwsEnvironment() *schema.Resource {
 
 func resourceAwsEnvironmentCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 
-	// Warning or errors can be collected in a slice type
 	var diags diag.Diagnostics
-
-	client, auth := getClient()
+	client := m.(*Client)
 
 	regions := []string{"*"}
 	if regionsSetting, ok := d.GetOk("regions"); ok {
-		regions = getStringSlice(regionsSetting.([]interface{}))
+		regions = expandStringSet(regionsSetting.(*schema.Set))
 		if len(regions) == 0 {
 			return diag.FromErr(errors.New("Must specify a region"))
 		}
@@ -98,14 +96,14 @@ func resourceAwsEnvironmentCreate(ctx context.Context, d *schema.ResourceData, m
 
 	var surveyTypes []string
 	if resourceTypesSetting, ok := d.GetOk("resource_types"); ok {
-		surveyTypes = getStringSlice(resourceTypesSetting.([]interface{}))
+		surveyTypes = expandStringSet(resourceTypesSetting.(*schema.Set))
 	}
 	if len(surveyTypes) == 0 {
 		// Default to all available types
 		getTypesParams := metadata.NewGetResourceTypesParams()
 		getTypesParams.Provider = provider
 		getTypesParams.Region = &singleRegion
-		resp, err := client.Metadata.GetResourceTypes(getTypesParams, auth)
+		resp, err := client.Metadata.GetResourceTypes(getTypesParams, client.Auth)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -146,7 +144,7 @@ func resourceAwsEnvironmentCreate(ctx context.Context, d *schema.ResourceData, m
 		params.Environment.ProviderOptions = &models.ProviderOptions{Aws: providerOpts}
 	}
 
-	resp, err := client.Environments.CreateEnvironment(params, auth)
+	resp, err := client.Environments.CreateEnvironment(params, client.Auth)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -158,15 +156,14 @@ func resourceAwsEnvironmentCreate(ctx context.Context, d *schema.ResourceData, m
 }
 
 func resourceAwsEnvironmentRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	// Warning or errors can be collected in a slice type
-	var diags diag.Diagnostics
 
-	client, auth := getClient()
+	var diags diag.Diagnostics
+	client := m.(*Client)
 
 	params := environments.NewGetEnvironmentParams()
 	params.EnvironmentID = d.Id()
 
-	resp, err := client.Environments.GetEnvironment(params, auth)
+	resp, err := client.Environments.GetEnvironment(params, client.Auth)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -227,11 +224,6 @@ func resourceAwsEnvironmentRead(ctx context.Context, d *schema.ResourceData, m i
 	// 	Summary:  "Fugue Debugging",
 	// 	Detail:   fmt.Sprintf("Regions: %+v", regions),
 	// })
-	// diags = append(diags, diag.Diagnostic{
-	// 	Severity: diag.Warning,
-	// 	Summary:  "Fugue Debugging",
-	// 	Detail:   fmt.Sprintf("Compliance families: %+v", complianceFamilies),
-	// })
 
 	return diags
 }
@@ -239,8 +231,8 @@ func resourceAwsEnvironmentRead(ctx context.Context, d *schema.ResourceData, m i
 func resourceAwsEnvironmentUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 
 	var diags diag.Diagnostics
+	client := m.(*Client)
 
-	client, auth := getClient()
 	params := environments.NewUpdateEnvironmentParams()
 	params.EnvironmentID = d.Id()
 	params.Environment = &models.UpdateEnvironmentInput{}
@@ -254,7 +246,7 @@ func resourceAwsEnvironmentUpdate(ctx context.Context, d *schema.ResourceData, m
 	if d.HasChange("regions") {
 		regions := []string{"*"}
 		if regionsSetting, ok := d.GetOk("regions"); ok {
-			regions = getStringSlice(regionsSetting.([]interface{}))
+			regions = expandStringSet(regionsSetting.(*schema.Set))
 			if len(regions) == 0 {
 				return diag.FromErr(errors.New("Must specify a region"))
 			}
@@ -268,7 +260,7 @@ func resourceAwsEnvironmentUpdate(ctx context.Context, d *schema.ResourceData, m
 	}
 	if d.HasChange("resource_types") {
 		if resourceTypesSetting, ok := d.GetOk("resource_types"); ok {
-			params.Environment.SurveyResourceTypes = getStringSlice(resourceTypesSetting.([]interface{}))
+			params.Environment.SurveyResourceTypes = expandStringSet(resourceTypesSetting.(*schema.Set))
 		}
 	}
 
@@ -303,7 +295,7 @@ func resourceAwsEnvironmentUpdate(ctx context.Context, d *schema.ResourceData, m
 		params.Environment.ScanScheduleEnabled = &scanScheduleEnabled
 	}
 
-	_, err := client.Environments.UpdateEnvironment(params, auth)
+	_, err := client.Environments.UpdateEnvironment(params, client.Auth)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -312,15 +304,14 @@ func resourceAwsEnvironmentUpdate(ctx context.Context, d *schema.ResourceData, m
 }
 
 func resourceAwsEnvironmentDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	// Warning or errors can be collected in a slice type
-	var diags diag.Diagnostics
 
-	client, auth := getClient()
+	var diags diag.Diagnostics
+	client := m.(*Client)
 
 	params := environments.NewDeleteEnvironmentParams()
 	params.EnvironmentID = d.Id()
 
-	_, err := client.Environments.DeleteEnvironment(params, auth)
+	_, err := client.Environments.DeleteEnvironment(params, client.Auth)
 	if err != nil {
 		return diag.FromErr(err)
 	}

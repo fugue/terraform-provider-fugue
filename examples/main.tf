@@ -18,9 +18,14 @@ data "fugue_aws_types" "all" {
 #   value = data.fugue_aws_types.all.types
 # }
 
+variable "role_arn" {
+  type = string
+}
+
 resource "fugue_aws_environment" "test" {
   name = "tf-test-1"
-  role_arn = "arn:aws:iam::0123456789:role/Fugue987654321"
+  role_arn = var.role_arn
+  regions = ["*"]
   compliance_families = ["CIS"]
 }
 
