@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/fugue/fugue-client/client/environments"
-	"github.com/fugue/fugue-client/client/metadata"
 	"github.com/fugue/fugue-client/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -46,7 +45,7 @@ func resourceAwsEnvironment() *schema.Resource {
 			},
 			"resource_types": &schema.Schema{
 				Type:     schema.TypeSet,
-				Optional: true,
+				Required: true,
 				MaxItems: 1000,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
@@ -92,22 +91,9 @@ func resourceAwsEnvironmentCreate(ctx context.Context, d *schema.ResourceData, m
 		provider = "aws_govcloud"
 	}
 
-	singleRegion := getSingleAwsRegion(provider, regions)
-
 	var surveyTypes []string
 	if resourceTypesSetting, ok := d.GetOk("resource_types"); ok {
 		surveyTypes = expandStringSet(resourceTypesSetting.(*schema.Set))
-	}
-	if len(surveyTypes) == 0 {
-		// Default to all available types
-		getTypesParams := metadata.NewGetResourceTypesParams()
-		getTypesParams.Provider = provider
-		getTypesParams.Region = &singleRegion
-		resp, err := client.Metadata.GetResourceTypes(getTypesParams, client.Auth)
-		if err != nil {
-			return diag.FromErr(err)
-		}
-		surveyTypes = resp.Payload.ResourceTypes
 	}
 
 	scanInterval := int64(0)
