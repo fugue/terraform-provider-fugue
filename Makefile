@@ -3,7 +3,7 @@ HOSTNAME=fugue.co
 NAMESPACE=co
 NAME=fugue
 BINARY=terraform-provider-${NAME}
-VERSION=0.1
+VERSION=v0.0.1
 OS_ARCH=darwin_amd64
 
 default: install
