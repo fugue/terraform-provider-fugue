@@ -1,5 +1,7 @@
 module github.com/go-openapi/runtime
 
+go 1.14
+
 require (
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/docker/go-units v0.3.3
