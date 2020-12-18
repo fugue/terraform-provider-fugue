@@ -2,7 +2,7 @@ terraform {
   required_providers {
     fugue = {
       version = "0.1"
-      source = "fugue.co/co/fugue"
+      source  = "fugue.co/co/fugue"
     }
   }
 }
@@ -18,11 +18,11 @@ variable "role_arn" {
 }
 
 resource "fugue_aws_environment" "test" {
-  name = "tf-test-1"
-  role_arn = var.role_arn
-  regions = ["*"]
+  name                = "tf-test-1"
+  role_arn            = var.role_arn
+  regions             = ["*"]
   compliance_families = ["FBP"]
-  resource_types = data.fugue_aws_types.all.types
+  resource_types      = data.fugue_aws_types.all.types
 }
 
 output "aws_env_id" {
