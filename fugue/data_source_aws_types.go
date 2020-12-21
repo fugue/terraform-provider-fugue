@@ -2,11 +2,14 @@ package fugue
 
 import (
 	"context"
+	"log"
 	"strconv"
 	"time"
 
 	"github.com/fugue/fugue-client/client/metadata"
+	"github.com/fugue/fugue-client/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -51,12 +54,28 @@ func dataSourceAwsTypesRead(ctx context.Context, d *schema.ResourceData, m inter
 	}
 	params.Region = &regionForTypes
 
-	resp, err := client.Metadata.GetResourceTypes(params, client.Auth)
+	var typeMetadata *models.ResourceTypeMetadata
+
+	err := resource.Retry(EnvironmentRetryTimeout, func() *resource.RetryError {
+		resp, err := client.Metadata.GetResourceTypes(params, client.Auth)
+		if err != nil {
+			log.Printf("[WARN] Get resource types error: %s, retrying", err.Error())
+			switch err.(type) {
+			case *metadata.GetResourceTypesInternalServerError:
+				return resource.RetryableError(err)
+			default:
+				return resource.NonRetryableError(err)
+			}
+		}
+		typeMetadata = resp.Payload
+		return nil
+	})
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
 	var types []string
-	for _, resourceTypeName := range resp.Payload.ResourceTypes {
+	for _, resourceTypeName := range typeMetadata.ResourceTypes {
 		types = append(types, resourceTypeName)
 	}
 	if err := d.Set("types", types); err != nil {
