@@ -64,6 +64,8 @@ github.com/aws/aws-sdk-go/service/sts/stsiface
 github.com/bgentry/go-netrc/netrc
 # github.com/bgentry/speakeasy v0.1.0
 github.com/bgentry/speakeasy
+# github.com/davecgh/go-spew v1.1.1
+github.com/davecgh/go-spew/spew
 # github.com/emirpasic/gods v1.12.0
 github.com/emirpasic/gods/containers
 github.com/emirpasic/gods/lists
@@ -223,6 +225,8 @@ github.com/hashicorp/go-version
 github.com/hashicorp/hcl/v2
 github.com/hashicorp/hcl/v2/ext/customdecode
 github.com/hashicorp/hcl/v2/hclsyntax
+# github.com/hashicorp/logutils v1.0.0
+github.com/hashicorp/logutils
 # github.com/hashicorp/terraform-exec v0.10.0
 github.com/hashicorp/terraform-exec/internal/version
 github.com/hashicorp/terraform-exec/tfexec
@@ -247,6 +251,8 @@ github.com/hashicorp/terraform-plugin-go/tfprotov5/tftypes
 # github.com/hashicorp/terraform-plugin-sdk/v2 v2.3.0
 ## explicit
 github.com/hashicorp/terraform-plugin-sdk/v2/diag
+github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging
+github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource
 github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema
 github.com/hashicorp/terraform-plugin-sdk/v2/internal/addrs
 github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema
@@ -254,6 +260,7 @@ github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim
 github.com/hashicorp/terraform-plugin-sdk/v2/internal/helper/hashcode
 github.com/hashicorp/terraform-plugin-sdk/v2/internal/plans/objchange
 github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugin/convert
+github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugintest
 github.com/hashicorp/terraform-plugin-sdk/v2/internal/tfdiags
 github.com/hashicorp/terraform-plugin-sdk/v2/meta
 github.com/hashicorp/terraform-plugin-sdk/v2/plugin
