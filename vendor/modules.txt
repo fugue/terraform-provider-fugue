@@ -73,15 +73,19 @@ github.com/emirpasic/gods/trees/binaryheap
 github.com/emirpasic/gods/utils
 # github.com/fatih/color v1.7.0
 github.com/fatih/color
-# github.com/fugue/fugue-client v0.8.0
+# github.com/fugue/fugue-client v0.11.0
 ## explicit
 github.com/fugue/fugue-client/client
 github.com/fugue/fugue-client/client/custom_rules
 github.com/fugue/fugue-client/client/environments
 github.com/fugue/fugue-client/client/events
+github.com/fugue/fugue-client/client/groups
+github.com/fugue/fugue-client/client/invites
 github.com/fugue/fugue-client/client/metadata
 github.com/fugue/fugue-client/client/notifications
+github.com/fugue/fugue-client/client/rule_waivers
 github.com/fugue/fugue-client/client/scans
+github.com/fugue/fugue-client/client/users
 github.com/fugue/fugue-client/models
 # github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8
 github.com/globalsign/mgo/bson
