@@ -3,14 +3,22 @@ package fugue
 import (
 	"context"
 	"errors"
-	"fmt"
+	"log"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/fugue/fugue-client/client/environments"
 	"github.com/fugue/fugue-client/models"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+const (
+	// EnvironmentRetryTimeout defines the maximum time to retry on
+	// errors when changing an environment
+	EnvironmentRetryTimeout = 30 * time.Second
 )
 
 func resourceAwsEnvironment() *schema.Resource {
@@ -20,52 +28,52 @@ func resourceAwsEnvironment() *schema.Resource {
 		UpdateContext: resourceAwsEnvironmentUpdate,
 		DeleteContext: resourceAwsEnvironmentDelete,
 		Schema: map[string]*schema.Schema{
-			"id": &schema.Schema{
+			"id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"govcloud": &schema.Schema{
+			"govcloud": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
 			},
-			"regions": &schema.Schema{
+			"regions": {
 				Type:     schema.TypeSet,
 				Required: true,
 				MaxItems: 100,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
-			"role_arn": &schema.Schema{
+			"role_arn": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"resource_types": &schema.Schema{
+			"resource_types": {
 				Type:     schema.TypeSet,
 				Required: true,
 				MaxItems: 1000,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
-			"compliance_families": &schema.Schema{
+			"compliance_families": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				MaxItems: 100,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
-			"scan_interval": &schema.Schema{
+			"scan_interval": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  86400,
 			},
-			"scan_schedule_enabled": &schema.Schema{
+			"scan_schedule_enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
 			},
-			"scan_status": &schema.Schema{
+			"scan_status": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -130,14 +138,28 @@ func resourceAwsEnvironmentCreate(ctx context.Context, d *schema.ResourceData, m
 		params.Environment.ProviderOptions = &models.ProviderOptions{Aws: providerOpts}
 	}
 
-	resp, err := client.Environments.CreateEnvironment(params, client.Auth)
+	var environmentID string
+
+	err := resource.Retry(EnvironmentRetryTimeout, func() *resource.RetryError {
+		resp, err := client.Environments.CreateEnvironment(params, client.Auth)
+		if err != nil {
+			log.Printf("[WARN] Create environment error: %s", err.Error())
+			switch err.(type) {
+			case *environments.CreateEnvironmentInternalServerError:
+				return resource.RetryableError(err)
+			default:
+				return resource.NonRetryableError(err)
+			}
+		}
+		environmentID = resp.Payload.ID
+		return nil
+	})
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	d.SetId(resp.Payload.ID)
 
+	d.SetId(environmentID)
 	resourceAwsEnvironmentRead(ctx, d, m)
-
 	return diags
 }
 
@@ -148,12 +170,25 @@ func resourceAwsEnvironmentRead(ctx context.Context, d *schema.ResourceData, m i
 
 	params := environments.NewGetEnvironmentParams()
 	params.EnvironmentID = d.Id()
+	var env *models.EnvironmentWithSummary
 
-	resp, err := client.Environments.GetEnvironment(params, client.Auth)
+	err := resource.Retry(EnvironmentRetryTimeout, func() *resource.RetryError {
+		resp, err := client.Environments.GetEnvironment(params, client.Auth)
+		if err != nil {
+			log.Printf("[WARN] Get environment error: %s", err.Error())
+			switch err.(type) {
+			case *environments.GetEnvironmentInternalServerError:
+				return resource.RetryableError(err)
+			default:
+				return resource.NonRetryableError(err)
+			}
+		}
+		env = resp.Payload
+		return nil
+	})
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	env := resp.Payload
 
 	if err := d.Set("name", env.Name); err != nil {
 		return diag.FromErr(err)
@@ -205,20 +240,12 @@ func resourceAwsEnvironmentRead(ctx context.Context, d *schema.ResourceData, m i
 		return diag.FromErr(err)
 	}
 
-	// diags = append(diags, diag.Diagnostic{
-	// 	Severity: diag.Warning,
-	// 	Summary:  "Fugue Debugging",
-	// 	Detail:   fmt.Sprintf("Regions: %+v", regions),
-	// })
-
 	return diags
 }
 
 func resourceAwsEnvironmentUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 
-	var diags diag.Diagnostics
 	client := m.(*Client)
-
 	params := environments.NewUpdateEnvironmentParams()
 	params.EnvironmentID = d.Id()
 	params.Environment = &models.UpdateEnvironmentInput{}
@@ -229,6 +256,7 @@ func resourceAwsEnvironmentUpdate(ctx context.Context, d *schema.ResourceData, m
 	if d.HasChange("name") {
 		params.Environment.Name = d.Get("name").(string)
 	}
+
 	if d.HasChange("regions") {
 		regions := []string{"*"}
 		if regionsSetting, ok := d.GetOk("regions"); ok {
@@ -240,21 +268,17 @@ func resourceAwsEnvironmentUpdate(ctx context.Context, d *schema.ResourceData, m
 		providerOptsInput.Aws.Regions = regions
 		params.Environment.ProviderOptions = providerOptsInput
 	}
+
 	if d.HasChange("role_arn") {
 		providerOptsInput.Aws.RoleArn = d.Get("role_arn").(string)
 		params.Environment.ProviderOptions = providerOptsInput
 	}
+
 	if d.HasChange("resource_types") {
 		if resourceTypesSetting, ok := d.GetOk("resource_types"); ok {
 			params.Environment.SurveyResourceTypes = expandStringSet(resourceTypesSetting.(*schema.Set))
 		}
 	}
-
-	diags = append(diags, diag.Diagnostic{
-		Severity: diag.Warning,
-		Summary:  "Fugue Debugging",
-		Detail:   fmt.Sprintf("Has Change? %+v", d.HasChange("compliance_families")),
-	})
 
 	if d.HasChange("compliance_families") {
 		complianceFamilies := []string{}
@@ -262,13 +286,8 @@ func resourceAwsEnvironmentUpdate(ctx context.Context, d *schema.ResourceData, m
 			complianceFamilies = expandStringSet(complianceFamiliesSetting.(*schema.Set))
 		}
 		params.Environment.ComplianceFamilies = complianceFamilies
-
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Warning,
-			Summary:  "Fugue Debugging",
-			Detail:   fmt.Sprintf("Up families: %+v", complianceFamilies),
-		})
 	}
+
 	if d.HasChange("scan_interval") {
 		scanInterval := int64(0)
 		if scanIntervalSetting, ok := d.GetOk("scan_interval"); ok {
@@ -276,12 +295,25 @@ func resourceAwsEnvironmentUpdate(ctx context.Context, d *schema.ResourceData, m
 		}
 		params.Environment.ScanInterval = scanInterval
 	}
+
 	if d.HasChange("scan_schedule_enabled") {
 		scanScheduleEnabled := d.Get("scan_schedule_enabled").(bool)
 		params.Environment.ScanScheduleEnabled = &scanScheduleEnabled
 	}
 
-	_, err := client.Environments.UpdateEnvironment(params, client.Auth)
+	err := resource.Retry(EnvironmentRetryTimeout, func() *resource.RetryError {
+		_, err := client.Environments.UpdateEnvironment(params, client.Auth)
+		if err != nil {
+			log.Printf("[WARN] Update environment error: %s", err.Error())
+			switch err.(type) {
+			case *environments.UpdateEnvironmentInternalServerError:
+				return resource.RetryableError(err)
+			default:
+				return resource.NonRetryableError(err)
+			}
+		}
+		return nil
+	})
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -291,16 +323,25 @@ func resourceAwsEnvironmentUpdate(ctx context.Context, d *schema.ResourceData, m
 
 func resourceAwsEnvironmentDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 
-	var diags diag.Diagnostics
 	client := m.(*Client)
-
 	params := environments.NewDeleteEnvironmentParams()
 	params.EnvironmentID = d.Id()
 
-	_, err := client.Environments.DeleteEnvironment(params, client.Auth)
+	err := resource.Retry(EnvironmentRetryTimeout, func() *resource.RetryError {
+		_, err := client.Environments.DeleteEnvironment(params, client.Auth)
+		if err != nil {
+			log.Printf("[WARN] Delete environment error: %s", err.Error())
+			switch err.(type) {
+			case *environments.DeleteEnvironmentInternalServerError:
+				return resource.RetryableError(err)
+			default:
+				return resource.NonRetryableError(err)
+			}
+		}
+		return nil
+	})
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
-	return diags
+	return nil
 }
