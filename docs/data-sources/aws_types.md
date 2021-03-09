@@ -15,12 +15,12 @@ description: |-
 
 ### Optional
 
-- **govcloud** (Boolean, Optional)
-- **id** (String, Optional) The ID of this resource.
-- **region** (String, Optional)
+- **govcloud** (Boolean)
+- **id** (String) The ID of this resource.
+- **region** (String)
 
 ### Read-only
 
-- **types** (List of String, Read-only)
+- **types** (List of String)
 
 
