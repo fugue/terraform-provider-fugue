@@ -3,7 +3,7 @@ HOSTNAME=fugue.co
 NAMESPACE=co
 NAME=fugue
 BINARY=terraform-provider-${NAME}
-VERSION=v0.0.2
+VERSION=v0.0.3
 OS_ARCH=darwin_amd64
 
 default: install
@@ -35,3 +35,7 @@ test:
 
 testacc: 
 	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 120m
+
+.PHONY: docs
+docs:
+	tfplugindocs

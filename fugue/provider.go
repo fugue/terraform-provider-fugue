@@ -15,16 +15,19 @@ func Provider() *schema.Provider {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("FUGUE_API_ID", nil),
+				Description: "Fugue API client ID. Specify using the FUGUE_API_ID environment variable.",
 			},
 			"client_secret": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Sensitive:   true,
 				DefaultFunc: schema.EnvDefaultFunc("FUGUE_API_SECRET", nil),
+				Description: "Fugue API client secret. Specify using the FUGUE_API_SECRET environment variable.",
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"fugue_aws_environment": resourceAwsEnvironment(),
+			"fugue_rule_waiver":     resourceRuleWaiver(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"fugue_aws_types": dataSourceAwsTypes(),

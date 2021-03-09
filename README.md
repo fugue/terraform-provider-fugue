@@ -32,9 +32,7 @@ Take a look at the [example .tf file](./examples/main.tf).
 
 ## Resource Types
 
-Create an AWS environment in Fugue using the `fugue_aws_environment` resource.
-
-For example:
+Create an AWS environment in Fugue using the `fugue_aws_environment` resource:
 
 ```hcl
 resource "fugue_aws_environment" "test" {
@@ -45,6 +43,24 @@ resource "fugue_aws_environment" "test" {
   resource_types = data.fugue_aws_types.all.types
 }
 ```
+
+A `fugue_rule_waiver` resource can be used to create a waiver for a specified rule
+and resource:
+
+```hcl
+resource "fugue_rule_waiver" "waiver1" {
+  name = "waive-FG_R00229"
+  comment = "This S3 bucket is intentionally public"
+  environment_id = fugue_aws_environment.test.id
+  rule_id = "FG_R00229"
+  resource_type = "AWS.S3.Bucket"
+  resource_provider = "aws.us-east-1"
+  resource_id = "my-public-s3-bucket"
+}
+```
+
+You may specify a resource_provider and resource_id of `*` in order to waive
+multiple resources for a specific rule.
 
 ## Data Sources
 
