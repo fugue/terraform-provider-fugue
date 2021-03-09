@@ -28,52 +28,52 @@ func resourceAwsEnvironment() *schema.Resource {
 		UpdateContext: resourceAwsEnvironmentUpdate,
 		DeleteContext: resourceAwsEnvironmentDelete,
 		Schema: map[string]*schema.Schema{
-			"id": &schema.Schema{
+			"id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"govcloud": &schema.Schema{
+			"govcloud": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
 			},
-			"regions": &schema.Schema{
+			"regions": {
 				Type:     schema.TypeSet,
 				Required: true,
 				MaxItems: 100,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
-			"role_arn": &schema.Schema{
+			"role_arn": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"resource_types": &schema.Schema{
+			"resource_types": {
 				Type:     schema.TypeSet,
 				Required: true,
 				MaxItems: 1000,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
-			"compliance_families": &schema.Schema{
+			"compliance_families": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				MaxItems: 100,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
-			"scan_interval": &schema.Schema{
+			"scan_interval": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  86400,
 			},
-			"scan_schedule_enabled": &schema.Schema{
+			"scan_schedule_enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
 			},
-			"scan_status": &schema.Schema{
+			"scan_status": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},

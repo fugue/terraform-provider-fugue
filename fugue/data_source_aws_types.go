@@ -27,7 +27,7 @@ func dataSourceAwsTypes() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
-			"types": &schema.Schema{
+			"types": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
