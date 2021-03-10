@@ -28,6 +28,7 @@ func Provider() *schema.Provider {
 		ResourcesMap: map[string]*schema.Resource{
 			"fugue_aws_environment": resourceAwsEnvironment(),
 			"fugue_rule_waiver":     resourceRuleWaiver(),
+			"fugue_rule":            resourceRule(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"fugue_aws_types": dataSourceAwsTypes(),
