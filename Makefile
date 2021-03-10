@@ -1,9 +1,7 @@
 TEST?=$$(go list ./... | grep -v 'vendor')
-HOSTNAME=fugue.co
-NAMESPACE=co
-NAME=fugue
-BINARY=terraform-provider-${NAME}
-VERSION=v0.0.3
+NAME=fugue/fugue
+BINARY=terraform-provider-fugue
+VERSION=0.0.4
 OS_ARCH=darwin_amd64
 
 default: install
@@ -26,8 +24,8 @@ release:
 	GOOS=windows GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_windows_amd64
 
 install: build
-	mkdir -p ~/.terraform.d/plugins/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OS_ARCH}
-	mv ${BINARY} ~/.terraform.d/plugins/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OS_ARCH}
+	mkdir -p ~/.terraform.d/plugins/registry.terraform.io/${NAME}/${VERSION}/${OS_ARCH}
+	cp ${BINARY} ~/.terraform.d/plugins/registry.terraform.io/${NAME}/${VERSION}/${OS_ARCH}
 
 test: 
 	go test -i $(TEST) || exit 1                                                   

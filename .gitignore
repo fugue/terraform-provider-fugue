@@ -1,3 +1,5 @@
+terraform-provider-fugue
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
