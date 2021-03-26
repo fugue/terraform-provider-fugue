@@ -39,6 +39,7 @@ func resourceGoogleEnvironment() *schema.Resource {
 				Description: "The google project ID (not required).",
 				Type:        schema.TypeString,
 				Required:    false,
+				Optional:    true,
 			},
 			"compliance_families": {
 				Description: `The set of compliance families to enable in this environment, e.g. ["CIS-Google_v1.1.0"].`,
@@ -110,7 +111,7 @@ func resourceGoogleEnvironmentCreate(ctx context.Context, d *schema.ResourceData
 
 	var environmentID string
 
-	err := resource.Retry(EnvironmentRetryTimeout, func() *resource.RetryError {
+	err := resource.RetryContext(ctx, EnvironmentRetryTimeout, func() *resource.RetryError {
 		resp, err := client.Environments.CreateEnvironment(params, client.Auth)
 		if err != nil {
 			log.Printf("[WARN] Create environment error: %s", err.Error())
@@ -142,7 +143,7 @@ func resourceGoogleEnvironmentRead(ctx context.Context, d *schema.ResourceData, 
 	params.EnvironmentID = d.Id()
 	var env *models.EnvironmentWithSummary
 
-	err := resource.Retry(EnvironmentRetryTimeout, func() *resource.RetryError {
+	err := resource.RetryContext(ctx, EnvironmentRetryTimeout, func() *resource.RetryError {
 		resp, err := client.Environments.GetEnvironment(params, client.Auth)
 		if err != nil {
 			log.Printf("[WARN] Get environment error: %s", err.Error())
@@ -232,7 +233,7 @@ func resourceGoogleEnvironmentUpdate(ctx context.Context, d *schema.ResourceData
 		params.Environment.ScanScheduleEnabled = &scanScheduleEnabled
 	}
 
-	err := resource.Retry(EnvironmentRetryTimeout, func() *resource.RetryError {
+	err := resource.RetryContext(ctx, EnvironmentRetryTimeout, func() *resource.RetryError {
 		_, err := client.Environments.UpdateEnvironment(params, client.Auth)
 		if err != nil {
 			log.Printf("[WARN] Update environment error: %s", err.Error())
@@ -258,7 +259,7 @@ func resourceGoogleEnvironmentDelete(ctx context.Context, d *schema.ResourceData
 	params := environments.NewDeleteEnvironmentParams()
 	params.EnvironmentID = d.Id()
 
-	err := resource.Retry(EnvironmentRetryTimeout, func() *resource.RetryError {
+	err := resource.RetryContext(ctx, EnvironmentRetryTimeout, func() *resource.RetryError {
 		_, err := client.Environments.DeleteEnvironment(params, client.Auth)
 		if err != nil {
 			log.Printf("[WARN] Delete environment error: %s", err.Error())
