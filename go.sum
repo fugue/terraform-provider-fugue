@@ -125,6 +125,8 @@ github.com/fugue/fugue-client v0.12.0 h1:BaBeaQeXgozg0nxDtlHqAYKRX9x9QpCHnFb1n/C
 github.com/fugue/fugue-client v0.12.0/go.mod h1:cKK+XrNZ5grfj351fx47mC2jbmHjNLZ++rkllcBfWJQ=
 github.com/fugue/fugue-client v0.13.0 h1:HJgsHeNwqfiK78XYcNhW3uUuRB0QMlKF8imDu//QI0s=
 github.com/fugue/fugue-client v0.13.0/go.mod h1:cKK+XrNZ5grfj351fx47mC2jbmHjNLZ++rkllcBfWJQ=
+github.com/fugue/fugue-client v0.13.1 h1:bRNFg9x8sVDuZRWtOcjWTN64fKgEUtAB6/1kzYmkFbY=
+github.com/fugue/fugue-client v0.13.1/go.mod h1:cKK+XrNZ5grfj351fx47mC2jbmHjNLZ++rkllcBfWJQ=
 github.com/gliderlabs/ssh v0.2.2 h1:6zsha5zo/TWhRhwqCD3+EarCAgZ2yN28ipRnGPnwkI0=
 github.com/gliderlabs/ssh v0.2.2/go.mod h1:U7qILu1NlMHj9FlMhZLlkCdDnU1DBEAqr0aevW3Awn0=
 github.com/globalsign/mgo v0.0.0-20180905125535-1ca0a4f7cbcb/go.mod h1:xkRDCp4j0OGD1HRkm4kmhM+pmpv3AKq5SU7GMg4oO/Q=
