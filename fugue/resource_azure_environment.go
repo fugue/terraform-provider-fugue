@@ -57,13 +57,6 @@ func resourceAzureEnvironment() *schema.Resource {
 				MaxItems:    1000,
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
-			"remediation_resource_groups": {
-				Description: "Remediation resource groups.",
-				Type:        schema.TypeSet,
-				Optional:    true,
-				MaxItems:    1000,
-				Elem:        &schema.Schema{Type: schema.TypeString},
-			},
 			"compliance_families": {
 				Description: `The set of compliance families to enable in this environment.`,
 				Type:        schema.TypeSet,
@@ -116,11 +109,6 @@ func resourceAzureEnvironmentCreate(ctx context.Context, d *schema.ResourceData,
 		surveyResourceGroups = expandStringSet(surveyResourceGroupsSetting.(*schema.Set))
 	}
 
-	remediationResourceGroups := []string{}
-	if remediationResourceGroupsSetting, ok := d.GetOk("remediation_resource_groups"); ok {
-		remediationResourceGroups = expandStringSet(remediationResourceGroupsSetting.(*schema.Set))
-	}
-
 	params := environments.NewCreateEnvironmentParams()
 	params.Environment = &models.CreateEnvironmentInput{
 		ComplianceFamilies:  complianceFamilies,
@@ -131,12 +119,11 @@ func resourceAzureEnvironmentCreate(ctx context.Context, d *schema.ResourceData,
 	}
 
 	providerOpts := &models.ProviderOptionsAzure{
-		ApplicationID:           d.Get("application_id").(string),
-		ClientSecret:            d.Get("secret").(string),
-		SubscriptionID:          d.Get("subscription_id").(string),
-		TenantID:                d.Get("tenant_id").(string),
-		SurveyResourceGroups:    surveyResourceGroups,
-		RemediateResourceGroups: remediationResourceGroups,
+		ApplicationID:        d.Get("application_id").(string),
+		ClientSecret:         d.Get("secret").(string),
+		SubscriptionID:       d.Get("subscription_id").(string),
+		TenantID:             d.Get("tenant_id").(string),
+		SurveyResourceGroups: surveyResourceGroups,
 	}
 
 	params.Environment.ProviderOptions = &models.ProviderOptions{Azure: providerOpts}
@@ -212,10 +199,6 @@ func resourceAzureEnvironmentRead(ctx context.Context, d *schema.ResourceData, m
 	providerOpts := env.ProviderOptions.Azure
 	surveyResourceGroups := providerOpts.SurveyResourceGroups
 	if err := d.Set("survey_resource_groups", surveyResourceGroups); err != nil {
-		return diag.FromErr(err)
-	}
-	remediateResourceGroups := providerOpts.RemediateResourceGroups
-	if err := d.Set("remediation_resource_groups", remediateResourceGroups); err != nil {
 		return diag.FromErr(err)
 	}
 	subscriptionID := providerOpts.SubscriptionID

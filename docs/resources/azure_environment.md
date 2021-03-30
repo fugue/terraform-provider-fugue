@@ -55,7 +55,6 @@ output "aws_env_id" {
 ### Optional
 
 - **compliance_families** (Set of String) The set of compliance families to enable in this environment.
-- **remediation_resource_groups** (Set of String) Remediation resource groups.
 - **scan_interval** (Number) Controls the time in seconds between scheduled scans of this environment.
 - **scan_schedule_enabled** (Boolean) Controls whether this environment is scanned on a schedule.
 

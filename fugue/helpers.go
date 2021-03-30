@@ -2,10 +2,17 @@ package fugue
 
 import (
 	"strings"
+	"time"
 
 	"github.com/fugue/fugue-client/client/custom_rules"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+const (
+	// EnvironmentRetryTimeout defines the maximum time to retry on
+	// errors when changing an environment
+	EnvironmentRetryTimeout = 30 * time.Second
 )
 
 func getStringSlice(input []interface{}) []string {
