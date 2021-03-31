@@ -2,10 +2,8 @@ package fugue
 
 import (
 	"context"
-	"errors"
 	"log"
 	"sort"
-	"strings"
 
 	"github.com/fugue/fugue-client/client/environments"
 	"github.com/fugue/fugue-client/models"
@@ -14,13 +12,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func resourceAwsEnvironment() *schema.Resource {
+func resourceAzureEnvironment() *schema.Resource {
 	return &schema.Resource{
-		Description:   "`fugue_aws_environment` manages an Environment in Fugue corresponding to one AWS account.",
-		CreateContext: resourceAwsEnvironmentCreate,
-		ReadContext:   resourceAwsEnvironmentRead,
-		UpdateContext: resourceAwsEnvironmentUpdate,
-		DeleteContext: resourceAwsEnvironmentDelete,
+		Description:   "`fugue_azure_environment` manages an Environment in Fugue corresponding to one Azure subscription.",
+		CreateContext: resourceAzureEnvironmentCreate,
+		ReadContext:   resourceAzureEnvironmentRead,
+		UpdateContext: resourceAzureEnvironmentUpdate,
+		DeleteContext: resourceAzureEnvironmentDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
 		},
@@ -35,33 +33,38 @@ func resourceAwsEnvironment() *schema.Resource {
 				Type:        schema.TypeString,
 				Required:    true,
 			},
-			"govcloud": {
-				Description: "Indicates whether this is an AWS GovCloud account.",
-				Type:        schema.TypeBool,
-				Optional:    true,
-				Default:     false,
-			},
-			"regions": {
-				Description: "The AWS region names to include in this environment. Use `*` to capture all supported regions.",
-				Type:        schema.TypeSet,
-				Required:    true,
-				MaxItems:    100,
-				Elem:        &schema.Schema{Type: schema.TypeString},
-			},
-			"role_arn": {
-				Description: "The AWS IAM role ARN used to provide Fugue secure access to the AWS account.",
+			"application_id": {
+				Description: "The Azure Active Directory application ID used for Fugue.",
 				Type:        schema.TypeString,
 				Required:    true,
 			},
-			"resource_types": {
-				Description: "The set of resource types to scan in this environment. You can use the `fugue_aws_types` data source to access the full list.",
+			"client_secret": {
+				Description: "The Azure secret generated for the Active Directory application.",
+				Type:        schema.TypeString,
+				Sensitive:   true,
+				Required:    true,
+			},
+			"subscription_id": {
+				Description: "The Azure subscription ID.",
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+			},
+			"tenant_id": {
+				Description: "The Azure Tenant ID.",
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+			},
+			"survey_resource_groups": {
+				Description: "Survey resource groups.",
 				Type:        schema.TypeSet,
 				Required:    true,
 				MaxItems:    1000,
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
 			"compliance_families": {
-				Description: `The set of compliance families to enable in this environment, e.g. ["CIS", "SOC2", "FBP", "NIST", "HIPAA"].`,
+				Description: `The set of compliance families to enable in this environment.`,
 				Type:        schema.TypeSet,
 				Optional:    true,
 				MaxItems:    100,
@@ -88,28 +91,10 @@ func resourceAwsEnvironment() *schema.Resource {
 	}
 }
 
-func resourceAwsEnvironmentCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceAzureEnvironmentCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 
 	var diags diag.Diagnostics
 	client := m.(*Client)
-
-	regions := []string{"*"}
-	if regionsSetting, ok := d.GetOk("regions"); ok {
-		regions = expandStringSet(regionsSetting.(*schema.Set))
-		if len(regions) == 0 {
-			return diag.FromErr(errors.New("Must specify a region"))
-		}
-	}
-
-	provider := "aws"
-	if d.Get("govcloud").(bool) {
-		provider = "aws_govcloud"
-	}
-
-	var surveyTypes []string
-	if resourceTypesSetting, ok := d.GetOk("resource_types"); ok {
-		surveyTypes = expandStringSet(resourceTypesSetting.(*schema.Set))
-	}
 
 	scanInterval := int64(0)
 	if scanIntervalSetting, ok := d.GetOk("scan_interval"); ok {
@@ -125,29 +110,33 @@ func resourceAwsEnvironmentCreate(ctx context.Context, d *schema.ResourceData, m
 		complianceFamilies = expandStringSet(complianceFamiliesSetting.(*schema.Set))
 	}
 
+	surveyResourceGroups := []string{}
+	if surveyResourceGroupsSetting, ok := d.GetOk("survey_resource_groups"); ok {
+		surveyResourceGroups = expandStringSet(surveyResourceGroupsSetting.(*schema.Set))
+	}
+
 	params := environments.NewCreateEnvironmentParams()
 	params.Environment = &models.CreateEnvironmentInput{
 		ComplianceFamilies:  complianceFamilies,
 		Name:                d.Get("name").(string),
-		Provider:            provider,
+		Provider:            "azure",
 		ScanInterval:        scanIntervalPtr,
-		SurveyResourceTypes: surveyTypes,
 		ScanScheduleEnabled: &scanScheduleEnabled,
 	}
 
-	providerOpts := &models.ProviderOptionsAws{
-		Regions: regions,
-		RoleArn: d.Get("role_arn").(string),
+	providerOpts := &models.ProviderOptionsAzure{
+		ApplicationID:        d.Get("application_id").(string),
+		ClientSecret:         d.Get("client_secret").(string),
+		SubscriptionID:       d.Get("subscription_id").(string),
+		TenantID:             d.Get("tenant_id").(string),
+		SurveyResourceGroups: surveyResourceGroups,
 	}
-	if provider == "aws_govcloud" {
-		params.Environment.ProviderOptions = &models.ProviderOptions{AwsGovcloud: providerOpts}
-	} else {
-		params.Environment.ProviderOptions = &models.ProviderOptions{Aws: providerOpts}
-	}
+
+	params.Environment.ProviderOptions = &models.ProviderOptions{Azure: providerOpts}
 
 	var environmentID string
 
-	err := resource.Retry(EnvironmentRetryTimeout, func() *resource.RetryError {
+	err := resource.RetryContext(ctx, EnvironmentRetryTimeout, func() *resource.RetryError {
 		resp, err := client.Environments.CreateEnvironment(params, client.Auth)
 		if err != nil {
 			log.Printf("[WARN] Create environment error: %s", err.Error())
@@ -166,11 +155,11 @@ func resourceAwsEnvironmentCreate(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	d.SetId(environmentID)
-	resourceAwsEnvironmentRead(ctx, d, m)
+	resourceAzureEnvironmentRead(ctx, d, m)
 	return diags
 }
 
-func resourceAwsEnvironmentRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceAzureEnvironmentRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 
 	var diags diag.Diagnostics
 	client := m.(*Client)
@@ -179,7 +168,7 @@ func resourceAwsEnvironmentRead(ctx context.Context, d *schema.ResourceData, m i
 	params.EnvironmentID = d.Id()
 	var env *models.EnvironmentWithSummary
 
-	err := resource.Retry(EnvironmentRetryTimeout, func() *resource.RetryError {
+	err := resource.RetryContext(ctx, EnvironmentRetryTimeout, func() *resource.RetryError {
 		resp, err := client.Environments.GetEnvironment(params, client.Auth)
 		if err != nil {
 			log.Printf("[WARN] Get environment error: %s", err.Error())
@@ -207,42 +196,26 @@ func resourceAwsEnvironmentRead(ctx context.Context, d *schema.ResourceData, m i
 		return diag.FromErr(err)
 	}
 
-	resourceTypes := env.SurveyResourceTypes
-	sort.Strings(resourceTypes)
-	if err := d.Set("resource_types", resourceTypes); err != nil {
-		return diag.FromErr(err)
-	}
-
 	complianceFamilies := env.ComplianceFamilies
 	sort.Strings(complianceFamilies)
 	if err := d.Set("compliance_families", complianceFamilies); err != nil {
 		return diag.FromErr(err)
 	}
 
-	var providerOpts *models.ProviderOptionsAws
-
-	if strings.ToLower(env.Provider) == "aws_govcloud" {
-		if err := d.Set("govcloud", true); err != nil {
-			return diag.FromErr(err)
-		}
-		providerOpts = env.ProviderOptions.AwsGovcloud
-	} else {
-		if err := d.Set("govcloud", false); err != nil {
-			return diag.FromErr(err)
-		}
-		providerOpts = env.ProviderOptions.Aws
-	}
-
-	roleArn := providerOpts.RoleArn
-	regions := providerOpts.Regions
-	sort.Strings(regions)
-
-	if err := d.Set("regions", regions); err != nil {
+	providerOpts := env.ProviderOptions.Azure
+	surveyResourceGroups := providerOpts.SurveyResourceGroups
+	if err := d.Set("survey_resource_groups", surveyResourceGroups); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("role_arn", roleArn); err != nil {
+	subscriptionID := providerOpts.SubscriptionID
+	if err := d.Set("subscription_id", subscriptionID); err != nil {
 		return diag.FromErr(err)
 	}
+	applicationID := providerOpts.ApplicationID
+	if err := d.Set("application_id", applicationID); err != nil {
+		return diag.FromErr(err)
+	}
+
 	if err := d.Set("scan_status", env.ScanStatus); err != nil {
 		return diag.FromErr(err)
 	}
@@ -250,7 +223,7 @@ func resourceAwsEnvironmentRead(ctx context.Context, d *schema.ResourceData, m i
 	return diags
 }
 
-func resourceAwsEnvironmentUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceAzureEnvironmentUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 
 	client := m.(*Client)
 	params := environments.NewUpdateEnvironmentParams()
@@ -258,33 +231,10 @@ func resourceAwsEnvironmentUpdate(ctx context.Context, d *schema.ResourceData, m
 	params.Environment = &models.UpdateEnvironmentInput{}
 
 	providerOptsInput := &models.ProviderOptionsUpdateInput{}
-	providerOptsInput.Aws = &models.ProviderOptionsAwsUpdateInput{}
+	providerOptsInput.Azure = &models.ProviderOptionsAzureUpdateInput{}
 
 	if d.HasChange("name") {
 		params.Environment.Name = d.Get("name").(string)
-	}
-
-	if d.HasChange("regions") {
-		regions := []string{"*"}
-		if regionsSetting, ok := d.GetOk("regions"); ok {
-			regions = expandStringSet(regionsSetting.(*schema.Set))
-			if len(regions) == 0 {
-				return diag.FromErr(errors.New("Must specify a region"))
-			}
-		}
-		providerOptsInput.Aws.Regions = regions
-		params.Environment.ProviderOptions = providerOptsInput
-	}
-
-	if d.HasChange("role_arn") {
-		providerOptsInput.Aws.RoleArn = d.Get("role_arn").(string)
-		params.Environment.ProviderOptions = providerOptsInput
-	}
-
-	if d.HasChange("resource_types") {
-		if resourceTypesSetting, ok := d.GetOk("resource_types"); ok {
-			params.Environment.SurveyResourceTypes = expandStringSet(resourceTypesSetting.(*schema.Set))
-		}
 	}
 
 	if d.HasChange("compliance_families") {
@@ -308,7 +258,17 @@ func resourceAwsEnvironmentUpdate(ctx context.Context, d *schema.ResourceData, m
 		params.Environment.ScanScheduleEnabled = &scanScheduleEnabled
 	}
 
-	err := resource.Retry(EnvironmentRetryTimeout, func() *resource.RetryError {
+	if d.HasChange("application_id") {
+		providerOptsInput.Azure.ApplicationID = d.Get("application_id").(string)
+		params.Environment.ProviderOptions = providerOptsInput
+	}
+
+	if d.HasChange("client_secret") {
+		providerOptsInput.Azure.ClientSecret = d.Get("client_secret").(string)
+		params.Environment.ProviderOptions = providerOptsInput
+	}
+
+	err := resource.RetryContext(ctx, EnvironmentRetryTimeout, func() *resource.RetryError {
 		_, err := client.Environments.UpdateEnvironment(params, client.Auth)
 		if err != nil {
 			log.Printf("[WARN] Update environment error: %s", err.Error())
@@ -325,16 +285,16 @@ func resourceAwsEnvironmentUpdate(ctx context.Context, d *schema.ResourceData, m
 		return diag.FromErr(err)
 	}
 
-	return resourceAwsEnvironmentRead(ctx, d, m)
+	return resourceAzureEnvironmentRead(ctx, d, m)
 }
 
-func resourceAwsEnvironmentDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceAzureEnvironmentDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 
 	client := m.(*Client)
 	params := environments.NewDeleteEnvironmentParams()
 	params.EnvironmentID = d.Id()
 
-	err := resource.Retry(EnvironmentRetryTimeout, func() *resource.RetryError {
+	err := resource.RetryContext(ctx, EnvironmentRetryTimeout, func() *resource.RetryError {
 		_, err := client.Environments.DeleteEnvironment(params, client.Auth)
 		if err != nil {
 			log.Printf("[WARN] Delete environment error: %s", err.Error())
