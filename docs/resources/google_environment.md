@@ -3,12 +3,12 @@
 page_title: "fugue_google_environment Resource - terraform-provider-fugue"
 subcategory: ""
 description: |-
-  fugue_google_environment manages an Environment in Fugue corresponding to one Google account.
+  fugue_google_environment manages an Environment in Fugue corresponding to one Google project.
 ---
 
 # fugue_google_environment (Resource)
 
-`fugue_google_environment` manages an Environment in Fugue corresponding to one Google account.
+`fugue_google_environment` manages an Environment in Fugue corresponding to one Google project.
 
 ## Example Usage
 
@@ -35,12 +35,12 @@ resource "fugue_google_environment" "example" {
 ### Required
 
 - **name** (String) The name for the environment.
-- **service_account_email** (String) The Google Service Account email used to provide Fugue secure access to the Google account.
+- **service_account_email** (String) The Google service account email used to provide Fugue secure access to the Google project.
 
 ### Optional
 
 - **compliance_families** (Set of String) The set of compliance families to enable in this environment, e.g. ["CIS-Google_v1.1.0"].
-- **project_id** (String) The google project ID (not required).
+- **project_id** (String) The Google project ID. If not specified, it defaults to the project containing the provided service account email.
 - **scan_interval** (Number) Controls the time in seconds between scheduled scans of this environment.
 - **scan_schedule_enabled** (Boolean) Controls whether this environment is scanned on a schedule.
 

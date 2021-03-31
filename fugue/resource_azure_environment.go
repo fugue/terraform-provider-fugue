@@ -14,7 +14,7 @@ import (
 
 func resourceAzureEnvironment() *schema.Resource {
 	return &schema.Resource{
-		Description:   "`fugue_azure_environment` manages an Environment in Fugue corresponding to one Azure account.",
+		Description:   "`fugue_azure_environment` manages an Environment in Fugue corresponding to one Azure subscription.",
 		CreateContext: resourceAzureEnvironmentCreate,
 		ReadContext:   resourceAzureEnvironmentRead,
 		UpdateContext: resourceAzureEnvironmentUpdate,
@@ -31,24 +31,27 @@ func resourceAzureEnvironment() *schema.Resource {
 				Required:    true,
 			},
 			"application_id": {
-				Description: "The Azure Application ID.",
+				Description: "The Azure Active Directory application ID used for Fugue.",
 				Type:        schema.TypeString,
 				Required:    true,
 			},
-			"secret": {
-				Description: "The Azure secret.",
+			"client_secret": {
+				Description: "The Azure secret generated for the Active Directory application.",
 				Type:        schema.TypeString,
+				Sensitive:   true,
 				Required:    true,
 			},
 			"subscription_id": {
 				Description: "The Azure subscription ID.",
 				Type:        schema.TypeString,
 				Required:    true,
+				ForceNew:    true,
 			},
 			"tenant_id": {
 				Description: "The Azure Tenant ID.",
 				Type:        schema.TypeString,
 				Required:    true,
+				ForceNew:    true,
 			},
 			"survey_resource_groups": {
 				Description: "Survey resource groups.",
@@ -120,7 +123,7 @@ func resourceAzureEnvironmentCreate(ctx context.Context, d *schema.ResourceData,
 
 	providerOpts := &models.ProviderOptionsAzure{
 		ApplicationID:        d.Get("application_id").(string),
-		ClientSecret:         d.Get("secret").(string),
+		ClientSecret:         d.Get("client_secret").(string),
 		SubscriptionID:       d.Get("subscription_id").(string),
 		TenantID:             d.Get("tenant_id").(string),
 		SurveyResourceGroups: surveyResourceGroups,
@@ -250,6 +253,16 @@ func resourceAzureEnvironmentUpdate(ctx context.Context, d *schema.ResourceData,
 	if d.HasChange("scan_schedule_enabled") {
 		scanScheduleEnabled := d.Get("scan_schedule_enabled").(bool)
 		params.Environment.ScanScheduleEnabled = &scanScheduleEnabled
+	}
+
+	if d.HasChange("application_id") {
+		providerOptsInput.Azure.ApplicationID = d.Get("application_id").(string)
+		params.Environment.ProviderOptions = providerOptsInput
+	}
+
+	if d.HasChange("client_secret") {
+		providerOptsInput.Azure.ClientSecret = d.Get("client_secret").(string)
+		params.Environment.ProviderOptions = providerOptsInput
 	}
 
 	err := resource.RetryContext(ctx, EnvironmentRetryTimeout, func() *resource.RetryError {

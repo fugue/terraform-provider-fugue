@@ -3,40 +3,45 @@
 page_title: "fugue_azure_environment Resource - terraform-provider-fugue"
 subcategory: ""
 description: |-
-  fugue_azure_environment manages an Environment in Fugue corresponding to one Azure account.
+  fugue_azure_environment manages an Environment in Fugue corresponding to one Azure subscription.
 ---
 
 # fugue_azure_environment (Resource)
 
-`fugue_azure_environment` manages an Environment in Fugue corresponding to one Azure account.
+`fugue_azure_environment` manages an Environment in Fugue corresponding to one Azure subscription.
 
 ## Example Usage
 
 ```terraform
 variable "tenant_id" {
-  description = "Azure tenant_id"
+  description = "Azure tenant ID"
+  type        = string
+}
+
+variable "subscription_id" {
+  description = "Azure subscription ID"
+  type        = string
+}
+
+variable "application_id" {
+  description = "Azure application ID"
+  type        = string
+}
+
+variable "client_secret" {
+  description = "Azure client secret"
   type        = string
   sensitive   = true
 }
 
-variable "secret" {
-  description = "Azure secret"
-  type        = string
-  sensitive   = true
-}
-
-resource "fugue_azure_environment" "test_azure_env" {
-  name                   = "tf-azure-test-1"
-  application_id         = "xxxxx"
-  subscription_id        = "xxxxxxx"
-  secret                 = var.secret
+resource "fugue_azure_environment" "example" {
+  name                   = "example"
   tenant_id              = var.tenant_id
+  subscription_id        = var.subscription_id
+  application_id         = var.application_id
+  client_secret          = var.client_secret
   compliance_families    = ["CISAZURE"]
   survey_resource_groups = ["*"]
-}
-
-output "aws_env_id" {
-  value = fugue_azure_environment.test_azure_env.id
 }
 ```
 
@@ -45,9 +50,9 @@ output "aws_env_id" {
 
 ### Required
 
-- **application_id** (String) The Azure Application ID.
+- **application_id** (String) The Azure Active Directory application ID used for Fugue.
+- **client_secret** (String, Sensitive) The Azure secret generated for the Active Directory application.
 - **name** (String) The name for the environment.
-- **secret** (String) The Azure secret.
 - **subscription_id** (String) The Azure subscription ID.
 - **survey_resource_groups** (Set of String) Survey resource groups.
 - **tenant_id** (String) The Azure Tenant ID.

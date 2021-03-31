@@ -14,7 +14,7 @@ import (
 
 func resourceGoogleEnvironment() *schema.Resource {
 	return &schema.Resource{
-		Description:   "`fugue_google_environment` manages an Environment in Fugue corresponding to one Google account.",
+		Description:   "`fugue_google_environment` manages an Environment in Fugue corresponding to one Google project.",
 		CreateContext: resourceGoogleEnvironmentCreate,
 		ReadContext:   resourceGoogleEnvironmentRead,
 		UpdateContext: resourceGoogleEnvironmentUpdate,
@@ -31,14 +31,13 @@ func resourceGoogleEnvironment() *schema.Resource {
 				Required:    true,
 			},
 			"service_account_email": {
-				Description: "The Google Service Account email used to provide Fugue secure access to the Google account.",
+				Description: "The Google service account email used to provide Fugue secure access to the Google project.",
 				Type:        schema.TypeString,
 				Required:    true,
 			},
 			"project_id": {
-				Description: "The google project ID (not required).",
+				Description: "The Google project ID. If not specified, it defaults to the project containing the provided service account email.",
 				Type:        schema.TypeString,
-				Required:    false,
 				Optional:    true,
 			},
 			"compliance_families": {
