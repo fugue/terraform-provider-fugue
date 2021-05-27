@@ -1,7 +1,7 @@
 TEST?=$$(go list ./... | grep -v 'vendor')
 NAME=fugue/fugue
 BINARY=terraform-provider-fugue
-VERSION=0.0.5
+VERSION=0.0.6
 OS_ARCH=darwin_amd64
 
 default: install
@@ -34,6 +34,8 @@ test:
 testacc: 
 	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 120m
 
+# Uses tfplugindocs from https://github.com/hashicorp/terraform-plugin-docs
+# Version v0.4.0
 .PHONY: docs
 docs:
 	tfplugindocs

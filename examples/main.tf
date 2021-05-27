@@ -31,11 +31,11 @@ output "aws_env_id" {
 
 # Waives "IAM root user access key should not exist" as an example
 resource "fugue_rule_waiver" "waiver1" {
-  name = "waive-FG_R00004"
-  comment = "This is an example waiver!"
-  environment_id = fugue_aws_environment.test.id
-  rule_id = "FG_R00004"
-  resource_type = "AWS.IAM.CredentialReport"
+  name              = "waive-FG_R00004"
+  comment           = "This is an example waiver!"
+  environment_id    = fugue_aws_environment.test.id
+  rule_id           = "FG_R00004"
+  resource_type     = "AWS.IAM.CredentialReport"
   resource_provider = "*"
-  resource_id = "*"
+  resource_id       = "*"
 }
