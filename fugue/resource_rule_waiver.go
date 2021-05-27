@@ -67,6 +67,12 @@ func resourceRuleWaiver() *schema.Resource {
 				Required:    true,
 				ForceNew:    true,
 			},
+			"resource_tag": {
+				Description: "A resource tag to match on, such as `Team:Engineering`.",
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+			},
 		},
 	}
 }
@@ -83,6 +89,11 @@ func resourceRuleWaiverCreate(ctx context.Context, d *schema.ResourceData, m int
 	resourceProvider := d.Get("resource_provider").(string)
 	resourceType := d.Get("resource_type").(string)
 	resourceID := d.Get("resource_id").(string)
+
+	var resourceTag string
+	if resourceTagSetting, ok := d.GetOk("resource_tag"); ok {
+		resourceTag = resourceTagSetting.(string)
+	}
 
 	validRule, err := isValidRuleID(client, ruleID)
 	if err != nil {
@@ -106,6 +117,7 @@ func resourceRuleWaiverCreate(ctx context.Context, d *schema.ResourceData, m int
 		ResourceProvider: &resourceProvider,
 		ResourceType:     &resourceType,
 		ResourceID:       &resourceID,
+		ResourceTag:      resourceTag,
 	}
 
 	var waiverID string
@@ -183,6 +195,11 @@ func resourceRuleWaiverRead(ctx context.Context, d *schema.ResourceData, m inter
 	}
 	if err := d.Set("rule_id", waiver.RuleID); err != nil {
 		return diag.FromErr(err)
+	}
+	if waiver.ResourceTag != nil {
+		if err := d.Set("resource_tag", waiver.ResourceTag); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	return diags
