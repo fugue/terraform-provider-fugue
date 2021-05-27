@@ -34,6 +34,8 @@ test:
 testacc: 
 	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 120m
 
+# Uses tfplugindocs from https://github.com/hashicorp/terraform-plugin-docs
+# Version v0.4.0
 .PHONY: docs
 docs:
 	tfplugindocs
