@@ -11,7 +11,7 @@ require (
 	github.com/go-openapi/strfmt v0.20.1
 	github.com/go-openapi/swag v0.19.15 // indirect
 	github.com/go-openapi/validate v0.20.2 // indirect
-	github.com/hashicorp/terraform-plugin-docs v0.2.0
+	github.com/hashicorp/terraform-plugin-docs v0.4.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.3.0
 	github.com/mailru/easyjson v0.7.7 // indirect
 	go.mongodb.org/mongo-driver v1.5.2 // indirect
