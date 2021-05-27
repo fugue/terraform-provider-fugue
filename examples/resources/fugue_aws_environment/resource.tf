@@ -8,9 +8,9 @@ data "fugue_aws_types" "all" {
 }
 
 resource "fugue_aws_environment" "example" {
-  name = "example"
-  role_arn = var.role_arn
-  regions = ["*"]
+  name                = "example"
+  role_arn            = var.role_arn
+  regions             = ["*"]
   compliance_families = ["CIS-AWS_v1.3.0", "CIS-Docker_v1.2.0"]
-  resource_types = data.fugue_aws_types.all.types
+  resource_types      = data.fugue_aws_types.all.types
 }
