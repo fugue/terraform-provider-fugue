@@ -33,7 +33,11 @@ func Provider() *schema.Provider {
 			"fugue_rule":               resourceRule(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"fugue_aws_types": dataSourceAwsTypes(),
+			"fugue_aws_types":    dataSourceAwsTypes(),
+			"fugue_environment":  dataSourceEnvironment(),
+			"fugue_environments": dataSourcePluralSchema(dataSourcePluralInfo{SingularEquivalent: "fugue_environment"}, dataSourceEnvironmentsRead),
+			"fugue_rule":         dataSourceRule(),
+			"fugue_rules":        dataSourcePluralSchema(dataSourcePluralInfo{SingularEquivalent: "fugue_rule"}, dataSourceRulesRead),
 		},
 		ConfigureContextFunc: providerConfigure,
 	}

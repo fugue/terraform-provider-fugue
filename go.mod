@@ -14,6 +14,7 @@ require (
 	github.com/hashicorp/terraform-plugin-docs v0.2.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.3.0
 	github.com/mailru/easyjson v0.7.7 // indirect
+	github.com/ryanuber/go-glob v1.0.0
 	go.mongodb.org/mongo-driver v1.5.2 // indirect
 	golang.org/x/net v0.0.0-20210525063256-abc453219eb5 // indirect
 	golang.org/x/sys v0.0.0-20210525143221-35b2ab0089ea // indirect

@@ -340,6 +340,9 @@ github.com/posener/complete/cmd/install
 github.com/posener/complete/match
 # github.com/russross/blackfriday v1.5.2
 github.com/russross/blackfriday
+# github.com/ryanuber/go-glob v1.0.0
+## explicit
+github.com/ryanuber/go-glob
 # github.com/sergi/go-diff v1.1.0
 github.com/sergi/go-diff/diffmatchpatch
 # github.com/ulikunitz/xz v0.5.8
