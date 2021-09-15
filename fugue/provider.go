@@ -38,6 +38,8 @@ func Provider() *schema.Provider {
 			"fugue_environments": dataSourcePluralSchema(dataSourcePluralInfo{SingularEquivalent: "fugue_environment"}, dataSourceEnvironmentsRead),
 			"fugue_rule":         dataSourceRule(),
 			"fugue_rules":        dataSourcePluralSchema(dataSourcePluralInfo{SingularEquivalent: "fugue_rule"}, dataSourceRulesRead),
+			"fugue_rule_waiver":  dataSourceRuleWaiver(),
+			"fugue_rule_waivers": dataSourcePluralSchema(dataSourcePluralInfo{SingularEquivalent: "fugue_rule_waiver"}, dataSourceRuleWaiversRead),
 		},
 		ConfigureContextFunc: providerConfigure,
 	}

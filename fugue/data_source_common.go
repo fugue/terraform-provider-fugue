@@ -123,3 +123,12 @@ func dataSourceCheckFilterV(d *schema.ResourceData, filterName string, values []
 func dataSourceCheckFilter(d *schema.ResourceData, filterName string, value string) bool {
 	return dataSourceCheckFilterV(d, filterName, []string{value})
 }
+
+func dataSourceCheckFilterP(d *schema.ResourceData, filterName string, value *string) bool {
+	if value == nil {
+		def := ""
+		value = &def
+	}
+
+	return dataSourceCheckFilterV(d, filterName, []string{*value})
+}
