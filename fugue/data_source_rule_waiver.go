@@ -118,7 +118,7 @@ func dataSourceRuleWaiverCommonRead(ctx context.Context, d *schema.ResourceData,
 				if !dataSourceCheckFilterP(d, "resource_type", waiver.ResourceType) {
 					continue
 				}
-				if !dataSourceCheckFilterP(d, "resource_tag", waiver.ResourceTag) {
+				if !dataSourceCheckFilter(d, "resource_tag", waiver.ResourceTag) {
 					continue
 				}
 

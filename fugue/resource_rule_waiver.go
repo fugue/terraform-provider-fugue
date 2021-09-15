@@ -196,7 +196,7 @@ func resourceRuleWaiverRead(ctx context.Context, d *schema.ResourceData, m inter
 	if err := d.Set("rule_id", waiver.RuleID); err != nil {
 		return diag.FromErr(err)
 	}
-	if waiver.ResourceTag != nil {
+	if waiver.ResourceTag != "" {
 		if err := d.Set("resource_tag", waiver.ResourceTag); err != nil {
 			return diag.FromErr(err)
 		}
