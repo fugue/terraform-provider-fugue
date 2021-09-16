@@ -13,6 +13,8 @@ import (
 
 func dataSourceRule() *schema.Resource {
 	return &schema.Resource{
+		Description: "`fugue_rule` data source can be used to retrieve information about a Fugue rule.",
+
 		ReadContext: dataSourceRuleRead,
 
 		Schema: map[string]*schema.Schema{

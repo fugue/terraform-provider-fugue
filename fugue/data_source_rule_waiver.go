@@ -13,6 +13,8 @@ import (
 
 func dataSourceRuleWaiver() *schema.Resource {
 	return &schema.Resource{
+		Description: "`fugue_rule_waiver` data source can be used to retrieve information about a Fugue rule waiver.",
+
 		ReadContext: dataSourceRuleWaiverRead,
 
 		Schema: map[string]*schema.Schema{

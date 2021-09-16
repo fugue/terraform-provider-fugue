@@ -1,0 +1,1 @@
+terraform import fugue_rule.rule1 c975697f-717b-4c48-ba7f-60c2fbd88221
