@@ -59,22 +59,14 @@ func resourceNotification() *schema.Resource {
 	}
 }
 
-func getListOfStrings(foo interface{}) []string {
-	var los []string
-	for _, iface := range foo.([]interface{}) {
-		los = append(los, iface.(string))
-	}
-	return los
-}
-
 func resourceNotificationCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 	client := m.(*Client)
 
 	name := d.Get("name").(string)
-	emails := getListOfStrings(d.Get("emails"))
-	environments := getListOfStrings(d.Get("environments"))
-	events := getListOfStrings(d.Get("events"))
+	emails := getStringSlice(d.Get("emails").([]interface{}))
+	environments := getStringSlice(d.Get("environments").([]interface{}))
+	events := getStringSlice(d.Get("events").([]interface{}))
 	topicArn := d.Get("topic_arn").(string)
 
 	params := notifications.NewCreateNotificationParams()

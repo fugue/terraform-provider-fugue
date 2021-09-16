@@ -31,6 +31,7 @@ resource "fugue_family" "family1" {
 ### Optional
 
 - **recommended** (Boolean) Whether the family is recommended.
+- **rule_ids** (List of String) The rule IDs which belong to this family.
 
 ### Read-Only
 

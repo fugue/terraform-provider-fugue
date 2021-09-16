@@ -39,7 +39,7 @@ EOF
 - **name** (String) The name of the rule.
 - **resource_type** (String) The resource type evaluated by this rule. This may be a string like `AWS.S3.Bucket` or `MULTIPLE` to indicate that multiple types are evaluated.
 - **rule_text** (String) The Rego code for the rule, as a string.
-- **severity** (String) Severity of this rule: Infomational, Low, Medium, High, or Critical.
+- **severity** (String) Severity of this rule: Informational, Low, Medium, High, or Critical.
 
 ### Read-Only
 

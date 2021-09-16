@@ -48,7 +48,7 @@ func resourceRule() *schema.Resource {
 				ForceNew:    true,
 			},
 			"severity": {
-				Description: "Severity of this rule: Infomational, Low, Medium, High, or Critical.",
+				Description: "Severity of this rule: Informational, Low, Medium, High, or Critical.",
 				Type:        schema.TypeString,
 				Required:    true,
 			},

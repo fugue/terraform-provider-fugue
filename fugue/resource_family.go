@@ -41,6 +41,12 @@ func resourceFamily() *schema.Resource {
 				Type:        schema.TypeBool,
 				Optional:    true,
 			},
+			"rule_ids": {
+				Description: "The rule IDs which belong to this family.",
+				Type:        schema.TypeList,
+				Optional:    true,
+				Elem:        &schema.Schema{Type: schema.TypeString},
+			},
 		},
 	}
 }
@@ -53,12 +59,14 @@ func resourceFamilyCreate(ctx context.Context, d *schema.ResourceData, m interfa
 	name := d.Get("name").(string)
 	description := d.Get("description").(string)
 	recommended := d.Get("recommended").(bool)
+	rule_ids := getStringSlice(d.Get("rule_ids").([]interface{}))
 
 	params := families.NewCreateFamilyParams()
 	params.Family = &models.CreateFamilyInput{
 		Name:        name,
 		Description: description,
 		Recommended: &recommended,
+		RuleIds:     rule_ids,
 	}
 
 	var familyID string
@@ -123,6 +131,9 @@ func resourceFamilyRead(ctx context.Context, d *schema.ResourceData, m interface
 		return diag.FromErr(err)
 	}
 	if err := d.Set("recommended", family.Recommended); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("rule_ids", family.RuleIds); err != nil {
 		return diag.FromErr(err)
 	}
 
