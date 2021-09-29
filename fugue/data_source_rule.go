@@ -74,8 +74,13 @@ func dataSourceRuleCommonRead(ctx context.Context, d *schema.ResourceData, m int
 	client := m.(*Client)
 
 	var filtered []*models.CustomRule
+	filters := getDataSourceFilters(d)
+	filtersJSON, err := getQueryJSON(filters)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
 
-	err := resource.RetryContext(context.Background(), EnvironmentRetryTimeout, func() *resource.RetryError {
+	err = resource.RetryContext(context.Background(), EnvironmentRetryTimeout, func() *resource.RetryError {
 		params := custom_rules.NewListCustomRulesParams()
 		offset := int64(0)
 		maxItems := int64(100)
@@ -83,6 +88,12 @@ func dataSourceRuleCommonRead(ctx context.Context, d *schema.ResourceData, m int
 
 		params.Offset = &offset
 		params.MaxItems = &maxItems
+		if len(filters) > 0 {
+			params.Query = &filtersJSON
+			log.Printf("[INFO] XYZ RULE FILTER: %+v", *params.Query)
+		} else {
+			log.Printf("[INFO] XYZ NO RULE FILTER")
+		}
 
 		for isTruncated {
 			resp, err := client.CustomRules.ListCustomRules(params, client.Auth)

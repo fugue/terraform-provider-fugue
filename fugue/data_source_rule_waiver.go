@@ -73,8 +73,13 @@ func dataSourceRuleWaiverCommonRead(ctx context.Context, d *schema.ResourceData,
 	client := m.(*Client)
 
 	var filtered []*models.RuleWaiver
+	filters := getDataSourceFilters(d)
+	filtersJSON, err := getQueryJSON(filters)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
 
-	err := resource.RetryContext(context.Background(), EnvironmentRetryTimeout, func() *resource.RetryError {
+	err = resource.RetryContext(context.Background(), EnvironmentRetryTimeout, func() *resource.RetryError {
 		params := rule_waivers.NewListRuleWaiversParams()
 		offset := int64(0)
 		maxItems := int64(100)
@@ -82,6 +87,9 @@ func dataSourceRuleWaiverCommonRead(ctx context.Context, d *schema.ResourceData,
 
 		params.Offset = &offset
 		params.MaxItems = &maxItems
+		if len(filters) > 0 {
+			params.Query = &filtersJSON
+		}
 
 		for isTruncated {
 			resp, err := client.RuleWaivers.ListRuleWaivers(params, client.Auth)

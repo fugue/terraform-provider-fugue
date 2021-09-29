@@ -3,6 +3,7 @@ package fugue
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -16,7 +17,7 @@ func dataSourceFiltersSchema() *schema.Schema {
 	return &schema.Schema{
 		Type:        schema.TypeSet,
 		Optional:    true,
-		Description: "Filters.  The result is restricted to the intersection of the result of all filter.",
+		Description: "Filters. The result is restricted to the intersection of the result of all filters.",
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
 				"name": {
@@ -24,12 +25,10 @@ func dataSourceFiltersSchema() *schema.Schema {
 					Type:        schema.TypeString,
 					Required:    true,
 				},
-
-				"values": {
-					Description: "Filter to apply (using glob syntax).",
-					Type:        schema.TypeList,
+				"value": {
+					Description: "Value to match",
+					Type:        schema.TypeString,
 					Required:    true,
-					Elem:        &schema.Schema{Type: schema.TypeString},
 				},
 			},
 		},
@@ -92,6 +91,66 @@ func dataSourceHashFilter(resourceType string, filters interface{}) string {
 	hex.Encode(dst, hv[:])
 
 	return string(dst)
+}
+
+func getDataSourceFilters(d *schema.ResourceData) map[string]string {
+	result := map[string]string{}
+	if filters := d.Get("filter"); filters != nil {
+		for _, filter := range filters.(*schema.Set).List() {
+			filterMap, ok := filter.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			filterName, ok := filterMap["name"].(string)
+			if !ok {
+				continue
+			}
+			filterValue, ok := filterMap["value"].(string)
+			if !ok {
+				continue
+			}
+			// var values []string
+			// for _, value := range filterVals {
+			// 	if valueStr, ok := value.(string); ok {
+			// 		values = append(values, valueStr)
+			// 	}
+			// }
+			result[filterName] = filterValue
+		}
+	}
+	return result
+}
+
+func getQueryJSON(filters map[string]string) (string, error) {
+	var filterStrings []string
+	for filterName, filterValue := range filters {
+		filterStrings = append(filterStrings, fmt.Sprintf("%s:%s", filterName, filterValue))
+	}
+	if len(filterStrings) == 0 {
+		return "", nil
+	}
+	query, err := json.Marshal(filterStrings)
+	if err != nil {
+		return "", err
+	}
+	return string(query), nil
+}
+
+func getQueryJSONOld(filters map[string][]string) (string, error) {
+	var filterStrings []string
+	for filterName, filterValues := range filters {
+		for _, value := range filterValues {
+			filterStrings = append(filterStrings, fmt.Sprintf("%s:%s", filterName, value))
+		}
+	}
+	if len(filterStrings) == 0 {
+		return "", nil
+	}
+	query, err := json.Marshal(filterStrings)
+	if err != nil {
+		return "", err
+	}
+	return string(query), nil
 }
 
 func dataSourceCheckFilterV(d *schema.ResourceData, filterName string, values []string) bool {

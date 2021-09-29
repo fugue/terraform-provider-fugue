@@ -43,8 +43,13 @@ func dataSourceEnvironmentCommonRead(ctx context.Context, d *schema.ResourceData
 	client := m.(*Client)
 
 	var filtered []*models.Environment
+	filters := getDataSourceFilters(d)
+	filtersJSON, err := getQueryJSON(filters)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
 
-	err := resource.RetryContext(context.Background(), EnvironmentRetryTimeout, func() *resource.RetryError {
+	err = resource.RetryContext(context.Background(), EnvironmentRetryTimeout, func() *resource.RetryError {
 		params := environments.NewListEnvironmentsParams()
 		offset := int64(0)
 		maxItems := int64(100)
@@ -52,6 +57,12 @@ func dataSourceEnvironmentCommonRead(ctx context.Context, d *schema.ResourceData
 
 		params.Offset = &offset
 		params.MaxItems = &maxItems
+		if len(filters) > 0 {
+			params.Query = &filtersJSON
+			log.Printf("[INFO] XXX Query: %+v", params.Query)
+		} else {
+			log.Printf("[INFO] XXX NO QUERY")
+		}
 
 		for isTruncated {
 			resp, err := client.Environments.ListEnvironments(params, client.Auth)
@@ -64,21 +75,7 @@ func dataSourceEnvironmentCommonRead(ctx context.Context, d *schema.ResourceData
 					return resource.NonRetryableError(err)
 				}
 			}
-
-			for _, env := range resp.Payload.Items {
-				if !dataSourceCheckFilter(d, "name", env.Name) {
-					continue
-				}
-				if !dataSourceCheckFilter(d, "id", env.ID) {
-					continue
-				}
-				if !dataSourceCheckFilter(d, "cloud_provider", env.Provider) {
-					continue
-				}
-
-				filtered = append(filtered, env)
-			}
-
+			filtered = append(filtered, resp.Payload.Items...)
 			isTruncated = resp.Payload.IsTruncated
 			offset = resp.Payload.NextOffset
 		}
