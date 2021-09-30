@@ -32,7 +32,7 @@ func Provider() *schema.Provider {
 			"fugue_rule_waiver":        resourceRuleWaiver(),
 			"fugue_rule":               resourceRule(),
 			"fugue_family":             resourceFamily(),
-			"fugue_notification":       resourceNotification(),
+			// "fugue_notification":       resourceNotification(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"fugue_aws_types":    dataSourceAwsTypes(),
