@@ -5,10 +5,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/ryanuber/go-glob"
 )
 
 func dataSourceFiltersSchema() *schema.Schema {
@@ -25,10 +25,11 @@ func dataSourceFiltersSchema() *schema.Schema {
 					Type:        schema.TypeString,
 					Required:    true,
 				},
-				"value": {
+				"values": {
 					Description: "Value to match",
-					Type:        schema.TypeString,
+					Type:        schema.TypeList,
 					Required:    true,
+					Elem:        &schema.Schema{Type: schema.TypeString},
 				},
 			},
 		},
@@ -93,8 +94,8 @@ func dataSourceHashFilter(resourceType string, filters interface{}) string {
 	return string(dst)
 }
 
-func getDataSourceFilters(d *schema.ResourceData) map[string]string {
-	result := map[string]string{}
+func getDataSourceFilters(d *schema.ResourceData) map[string][]string {
+	result := map[string][]string{}
 	if filters := d.Get("filter"); filters != nil {
 		for _, filter := range filters.(*schema.Set).List() {
 			filterMap, ok := filter.(map[string]interface{})
@@ -105,26 +106,29 @@ func getDataSourceFilters(d *schema.ResourceData) map[string]string {
 			if !ok {
 				continue
 			}
-			filterValue, ok := filterMap["value"].(string)
-			if !ok {
-				continue
-			}
-			// var values []string
-			// for _, value := range filterVals {
-			// 	if valueStr, ok := value.(string); ok {
-			// 		values = append(values, valueStr)
-			// 	}
+			// filterValue, ok := filterMap["value"].(string)
+			// if !ok {
+			// 	continue
 			// }
-			result[filterName] = filterValue
+			var values []string
+			for _, value := range filterMap["values"].([]interface{}) {
+				if valueStr, ok := value.(string); ok {
+					values = append(values, valueStr)
+				}
+			}
+			result[filterName] = values
 		}
 	}
 	return result
 }
 
-func getQueryJSON(filters map[string]string) (string, error) {
+func getQueryJSON(filters map[string][]string) (string, error) {
 	var filterStrings []string
 	for filterName, filterValue := range filters {
-		filterStrings = append(filterStrings, fmt.Sprintf("%s:%s", filterName, filterValue))
+		if len(filterValue) != 1 {
+			return "", fmt.Errorf("filters are currently limited to a single value")
+		}
+		filterStrings = append(filterStrings, fmt.Sprintf("%s:%s", filterName, strings.Join(filterValue, ",")))
 	}
 	if len(filterStrings) == 0 {
 		return "", nil
@@ -160,9 +164,12 @@ func dataSourceCheckFilterV(d *schema.ResourceData, filterName string, values []
 				if cfVals, ok := filt.(map[string]interface{})["values"]; ok {
 					for _, val := range cfVals.([]interface{}) {
 						for _, cv := range values {
-							if glob.Glob(val.(string), cv) {
+							if strings.Contains(strings.ToLower(cv), strings.ToLower(val.(string))) {
 								return true
 							}
+							// if glob.Glob(val.(string), cv) {
+							// 	return true
+							// }
 						}
 					}
 					return false
