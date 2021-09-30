@@ -75,7 +75,21 @@ func dataSourceEnvironmentCommonRead(ctx context.Context, d *schema.ResourceData
 					return resource.NonRetryableError(err)
 				}
 			}
-			filtered = append(filtered, resp.Payload.Items...)
+
+			for _, env := range resp.Payload.Items {
+				if !dataSourceCheckFilter(d, "name", env.Name) {
+					continue
+				}
+				if !dataSourceCheckFilter(d, "id", env.ID) {
+					continue
+				}
+				if !dataSourceCheckFilter(d, "cloud_provider", env.Provider) {
+					continue
+				}
+
+				filtered = append(filtered, env)
+			}
+
 			isTruncated = resp.Payload.IsTruncated
 			offset = resp.Payload.NextOffset
 		}

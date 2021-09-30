@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/ryanuber/go-glob"
 )
 
 func dataSourceFiltersSchema() *schema.Schema {
@@ -128,24 +129,24 @@ func getQueryJSON(filters map[string][]string) (string, error) {
 		if len(filterValue) != 1 {
 			return "", fmt.Errorf("filters are currently limited to a single value")
 		}
-		filterStrings = append(filterStrings, fmt.Sprintf("%s:%s", filterName, strings.Join(filterValue, ",")))
-	}
-	if len(filterStrings) == 0 {
-		return "", nil
-	}
-	query, err := json.Marshal(filterStrings)
-	if err != nil {
-		return "", err
-	}
-	return string(query), nil
-}
 
-func getQueryJSONOld(filters map[string][]string) (string, error) {
-	var filterStrings []string
-	for filterName, filterValues := range filters {
-		for _, value := range filterValues {
-			filterStrings = append(filterStrings, fmt.Sprintf("%s:%s", filterName, value))
+		/* Extract the largest section from each glob so we can use glob locally
+		 * but stiff filter out most of the entries on the server. */
+		serverFilters := make([]string, 0, len(filterValue))
+		for filter := range filterValue {
+			components := strings.Split(filterValue[filter], "*")
+			var longestComponent string
+			longestComponentLength := -1
+			for component := range components {
+				if len(components[component]) > longestComponentLength {
+					longestComponent = components[component]
+					longestComponentLength = len(longestComponent)
+				}
+			}
+			serverFilters = append(serverFilters, longestComponent)
 		}
+
+		filterStrings = append(filterStrings, fmt.Sprintf("%s:%s", filterName, strings.Join(serverFilters, ",")))
 	}
 	if len(filterStrings) == 0 {
 		return "", nil
@@ -164,12 +165,9 @@ func dataSourceCheckFilterV(d *schema.ResourceData, filterName string, values []
 				if cfVals, ok := filt.(map[string]interface{})["values"]; ok {
 					for _, val := range cfVals.([]interface{}) {
 						for _, cv := range values {
-							if strings.Contains(strings.ToLower(cv), strings.ToLower(val.(string))) {
+							if glob.Glob(strings.ToLower(val.(string)), strings.ToLower(cv)) {
 								return true
 							}
-							// if glob.Glob(val.(string), cv) {
-							// 	return true
-							// }
 						}
 					}
 					return false
