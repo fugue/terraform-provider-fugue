@@ -97,7 +97,7 @@ func resourceAwsEnvironmentCreate(ctx context.Context, d *schema.ResourceData, m
 	if regionsSetting, ok := d.GetOk("regions"); ok {
 		regions = expandStringSet(regionsSetting.(*schema.Set))
 		if len(regions) == 0 {
-			return diag.FromErr(errors.New("Must specify a region"))
+			return diag.FromErr(errors.New("must specify a region"))
 		}
 	}
 
@@ -147,7 +147,7 @@ func resourceAwsEnvironmentCreate(ctx context.Context, d *schema.ResourceData, m
 
 	var environmentID string
 
-	err := resource.Retry(EnvironmentRetryTimeout, func() *resource.RetryError {
+	err := resource.RetryContext(ctx, EnvironmentRetryTimeout, func() *resource.RetryError {
 		resp, err := client.Environments.CreateEnvironment(params, client.Auth)
 		if err != nil {
 			log.Printf("[WARN] Create environment error: %s", err.Error())
@@ -179,7 +179,7 @@ func resourceAwsEnvironmentRead(ctx context.Context, d *schema.ResourceData, m i
 	params.EnvironmentID = d.Id()
 	var env *models.EnvironmentWithSummary
 
-	err := resource.Retry(EnvironmentRetryTimeout, func() *resource.RetryError {
+	err := resource.RetryContext(ctx, EnvironmentRetryTimeout, func() *resource.RetryError {
 		resp, err := client.Environments.GetEnvironment(params, client.Auth)
 		if err != nil {
 			log.Printf("[WARN] Get environment error: %s", err.Error())
@@ -269,7 +269,7 @@ func resourceAwsEnvironmentUpdate(ctx context.Context, d *schema.ResourceData, m
 		if regionsSetting, ok := d.GetOk("regions"); ok {
 			regions = expandStringSet(regionsSetting.(*schema.Set))
 			if len(regions) == 0 {
-				return diag.FromErr(errors.New("Must specify a region"))
+				return diag.FromErr(errors.New("must specify a region"))
 			}
 		}
 		providerOptsInput.Aws.Regions = regions
@@ -308,7 +308,7 @@ func resourceAwsEnvironmentUpdate(ctx context.Context, d *schema.ResourceData, m
 		params.Environment.ScanScheduleEnabled = &scanScheduleEnabled
 	}
 
-	err := resource.Retry(EnvironmentRetryTimeout, func() *resource.RetryError {
+	err := resource.RetryContext(ctx, EnvironmentRetryTimeout, func() *resource.RetryError {
 		_, err := client.Environments.UpdateEnvironment(params, client.Auth)
 		if err != nil {
 			log.Printf("[WARN] Update environment error: %s", err.Error())
@@ -334,7 +334,7 @@ func resourceAwsEnvironmentDelete(ctx context.Context, d *schema.ResourceData, m
 	params := environments.NewDeleteEnvironmentParams()
 	params.EnvironmentID = d.Id()
 
-	err := resource.Retry(EnvironmentRetryTimeout, func() *resource.RetryError {
+	err := resource.RetryContext(ctx, EnvironmentRetryTimeout, func() *resource.RetryError {
 		_, err := client.Environments.DeleteEnvironment(params, client.Auth)
 		if err != nil {
 			log.Printf("[WARN] Delete environment error: %s", err.Error())

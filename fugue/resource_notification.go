@@ -13,7 +13,7 @@ import (
 
 func resourceNotification() *schema.Resource {
 	return &schema.Resource{
-		Description:   "`fugue_notification` manages the code and configuration for a notification in Fugue.",
+		Description:   "`fugue_notification` manages a notification in Fugue.",
 		CreateContext: resourceNotificationCreate,
 		ReadContext:   resourceNotificationRead,
 		UpdateContext: resourceNotificationUpdate,
@@ -28,30 +28,30 @@ func resourceNotification() *schema.Resource {
 				Computed:    true,
 			},
 			"name": {
-				Description: "The name of the notification.  Must be unique.",
+				Description: "The name of the notification. Must be unique.",
 				Type:        schema.TypeString,
 				Required:    true,
 			},
 			"emails": {
-				Description: "The e-mail addresses to be notified.",
+				Description: "The email addresses to be notified.",
 				Type:        schema.TypeList,
-				Required:    true,
+				Optional:    true,
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
 			"environments": {
-				Description: "The environments of the notification",
+				Description: "The environments to be monitored.",
 				Type:        schema.TypeList,
 				Required:    true,
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
 			"events": {
-				Description: "The events of the notification",
+				Description: "Event types to be monitored.",
 				Type:        schema.TypeList,
 				Required:    true,
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
 			"topic_arn": {
-				Description: "Whether the notification is recommended.",
+				Description: "SNS topic ARN to be notified.",
 				Type:        schema.TypeString,
 				Optional:    true,
 			},
@@ -79,7 +79,6 @@ func resourceNotificationCreate(ctx context.Context, d *schema.ResourceData, m i
 	}
 
 	var notificationID string
-
 	err := resource.RetryContext(context.Background(), EnvironmentRetryTimeout, func() *resource.RetryError {
 		resp, err := client.Notifications.CreateNotification(params, client.Auth)
 		if err != nil {
@@ -88,8 +87,10 @@ func resourceNotificationCreate(ctx context.Context, d *schema.ResourceData, m i
 				return resource.NonRetryableError(err)
 			case *notifications.CreateNotificationUnauthorized:
 				return resource.NonRetryableError(err)
-			default:
+			case *notifications.CreateNotificationBadRequest:
 				return resource.NonRetryableError(err)
+			default:
+				return resource.RetryableError(err)
 			}
 		}
 		notificationID = resp.Payload.NotificationID
@@ -98,49 +99,44 @@ func resourceNotificationCreate(ctx context.Context, d *schema.ResourceData, m i
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
 	d.SetId(notificationID)
 	resourceNotificationRead(ctx, d, m)
 	return diags
 }
 
 func resourceNotificationGetById(ctx context.Context, d *schema.ResourceData, m interface{}, id string) (*models.Notification, diag.Diagnostics) {
-	client := m.(*Client)
 
+	client := m.(*Client)
 	var result *models.Notification
 
-	err := resource.RetryContext(context.Background(), EnvironmentRetryTimeout, func() *resource.RetryError {
+	err := resource.RetryContext(ctx, EnvironmentRetryTimeout, func() *resource.RetryError {
 		params := notifications.NewListNotificationsParams()
 		offset := int64(0)
 		maxItems := int64(100)
 		isTruncated := true
-
 		params.Offset = &offset
 		params.MaxItems = &maxItems
-
 		for isTruncated {
 			resp, err := client.Notifications.ListNotifications(params, client.Auth)
 			if err != nil {
-				log.Printf("[WARN] Get waiver error: %s", err.Error())
+				log.Printf("[WARN] List notifications error: %s", err.Error())
 				switch err.(type) {
-				case *notifications.ListNotificationsInternalServerError:
-					return resource.RetryableError(err)
 				case *notifications.ListNotificationsForbidden:
-					return resource.RetryableError(err)
-				case *notifications.ListNotificationsUnauthorized:
-					return resource.RetryableError(err)
-				default:
 					return resource.NonRetryableError(err)
+				case *notifications.ListNotificationsUnauthorized:
+					return resource.NonRetryableError(err)
+				case *notifications.ListNotificationsBadRequest:
+					return resource.NonRetryableError(err)
+				default:
+					return resource.RetryableError(err)
 				}
 			}
-
 			for _, notification := range resp.Payload.Items {
 				if notification.NotificationID == id {
 					result = notification
 					return nil
 				}
 			}
-
 			isTruncated = resp.Payload.IsTruncated
 			offset = resp.Payload.NextOffset
 		}
@@ -149,21 +145,17 @@ func resourceNotificationGetById(ctx context.Context, d *schema.ResourceData, m 
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
-
 	return result, nil
 }
 
 func resourceNotificationRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-
 	notification, diags := resourceNotificationGetById(ctx, d, m, d.Id())
 	if diags != nil {
 		return diags
 	}
-
 	if notification == nil {
 		return diag.Errorf("Unable to locate notification with id '%s'.", d.Id())
 	}
-
 	if err := d.Set("name", notification.Name); err != nil {
 		return diag.FromErr(err)
 	}
@@ -179,14 +171,12 @@ func resourceNotificationRead(ctx context.Context, d *schema.ResourceData, m int
 	if err := d.Set("topic_arn", notification.TopicArn); err != nil {
 		return diag.FromErr(err)
 	}
-
 	return diags
 }
 
 func resourceNotificationUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 
 	client := m.(*Client)
-
 	params := notifications.NewUpdateNotificationParams()
 	params.NotificationID = d.Id()
 	params.Notification.Name = d.Get("name").(string)
@@ -195,10 +185,12 @@ func resourceNotificationUpdate(ctx context.Context, d *schema.ResourceData, m i
 	params.Notification.Events = d.Get("events").([]string)
 	params.Notification.TopicArn = d.Get("topic_arn").(string)
 
-	err := resource.RetryContext(context.Background(), EnvironmentRetryTimeout, func() *resource.RetryError {
+	err := resource.RetryContext(ctx, EnvironmentRetryTimeout, func() *resource.RetryError {
 		_, err := client.Notifications.UpdateNotification(params, client.Auth)
 		if err != nil {
 			switch err.(type) {
+			case *notifications.UpdateNotificationBadRequest:
+				return resource.NonRetryableError(err)
 			case *notifications.UpdateNotificationForbidden:
 				return resource.NonRetryableError(err)
 			case *notifications.UpdateNotificationUnauthorized:
@@ -214,24 +206,24 @@ func resourceNotificationUpdate(ctx context.Context, d *schema.ResourceData, m i
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
 	return resourceNotificationRead(ctx, d, m)
 }
 
 func resourceNotificationDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 
 	client := m.(*Client)
-
 	params := notifications.NewDeleteNotificationParams()
 	params.NotificationID = d.Id()
 
-	err := resource.RetryContext(context.Background(), EnvironmentRetryTimeout, func() *resource.RetryError {
+	err := resource.RetryContext(ctx, EnvironmentRetryTimeout, func() *resource.RetryError {
 		_, err := client.Notifications.DeleteNotification(params, client.Auth)
 		if err != nil {
 			switch err.(type) {
 			case *notifications.DeleteNotificationForbidden:
 				return resource.NonRetryableError(err)
 			case *notifications.DeleteNotificationUnauthorized:
+				return resource.NonRetryableError(err)
+			case *notifications.DeleteNotificationNotFound:
 				return resource.NonRetryableError(err)
 			default:
 				return resource.RetryableError(err)

@@ -8,11 +8,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceFamily() *schema.Resource {
 	return &schema.Resource{
-		Description:   "`fugue_family` manages the code and configuration for a family in Fugue.",
+		Description:   "`fugue_family` manages a custom compliance family in Fugue.",
 		CreateContext: resourceFamilyCreate,
 		ReadContext:   resourceFamilyRead,
 		UpdateContext: resourceFamilyUpdate,
@@ -27,17 +28,24 @@ func resourceFamily() *schema.Resource {
 				Computed:    true,
 			},
 			"name": {
-				Description: "The name of the family.",
-				Type:        schema.TypeString,
-				Required:    true,
+				Description:  "The name of the family.",
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.StringLenBetween(1, 250),
 			},
 			"description": {
-				Description: "The description of the family.",
-				Type:        schema.TypeString,
-				Required:    true,
+				Description:  "The description of the family.",
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.StringLenBetween(1, 250),
 			},
 			"recommended": {
 				Description: "Whether the family is recommended.",
+				Type:        schema.TypeBool,
+				Optional:    true,
+			},
+			"always_enabled": {
+				Description: "Whether the family will automatically be enabled on all environments.",
 				Type:        schema.TypeBool,
 				Optional:    true,
 			},
@@ -55,29 +63,30 @@ func resourceFamilyCreate(ctx context.Context, d *schema.ResourceData, m interfa
 
 	var diags diag.Diagnostics
 	client := m.(*Client)
-
 	name := d.Get("name").(string)
 	description := d.Get("description").(string)
 	recommended := d.Get("recommended").(bool)
-	rule_ids := getStringSlice(d.Get("rule_ids").([]interface{}))
+	alwaysEnabled := d.Get("always_enabled").(bool)
+	ruleIDs := getStringSlice(d.Get("rule_ids").([]interface{}))
 
 	params := families.NewCreateFamilyParams()
 	params.Family = &models.CreateFamilyInput{
 		Name:        name,
 		Description: description,
 		Recommended: &recommended,
-		RuleIds:     rule_ids,
+		RuleIds:     ruleIDs,
 	}
-
+	if alwaysEnabled {
+		params.Family.AlwaysEnabled = &alwaysEnabled
+	}
 	var familyID string
-
-	err := resource.RetryContext(context.Background(), EnvironmentRetryTimeout, func() *resource.RetryError {
+	err := resource.RetryContext(ctx, EnvironmentRetryTimeout, func() *resource.RetryError {
 		resp, err := client.Families.CreateFamily(params, client.Auth)
 		if err != nil {
 			switch err.(type) {
-			case *families.CreateFamilyForbidden:
-				return resource.NonRetryableError(err)
-			case *families.CreateFamilyUnauthorized:
+			case *families.CreateFamilyBadRequest,
+				*families.CreateFamilyForbidden,
+				*families.CreateFamilyUnauthorized:
 				return resource.NonRetryableError(err)
 			default:
 				return resource.RetryableError(err)
@@ -89,7 +98,6 @@ func resourceFamilyCreate(ctx context.Context, d *schema.ResourceData, m interfa
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
 	d.SetId(familyID)
 	resourceFamilyRead(ctx, d, m)
 	return diags
@@ -99,19 +107,17 @@ func resourceFamilyRead(ctx context.Context, d *schema.ResourceData, m interface
 
 	var diags diag.Diagnostics
 	client := m.(*Client)
-
 	params := families.NewGetFamilyParams()
 	params.FamilyID = d.Id()
 
 	var family *models.FamilyWithRules
-
-	err := resource.RetryContext(context.Background(), EnvironmentRetryTimeout, func() *resource.RetryError {
+	err := resource.RetryContext(ctx, EnvironmentRetryTimeout, func() *resource.RetryError {
 		resp, err := client.Families.GetFamily(params, client.Auth)
 		if err != nil {
 			switch err.(type) {
-			case *families.GetFamilyForbidden:
-				return resource.NonRetryableError(err)
-			case *families.GetFamilyUnauthorized:
+			case *families.GetFamilyBadRequest,
+				*families.GetFamilyForbidden,
+				*families.GetFamilyUnauthorized:
 				return resource.NonRetryableError(err)
 			default:
 				return resource.RetryableError(err)
@@ -123,7 +129,6 @@ func resourceFamilyRead(ctx context.Context, d *schema.ResourceData, m interface
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
 	if err := d.Set("name", family.Name); err != nil {
 		return diag.FromErr(err)
 	}
@@ -133,32 +138,47 @@ func resourceFamilyRead(ctx context.Context, d *schema.ResourceData, m interface
 	if err := d.Set("recommended", family.Recommended); err != nil {
 		return diag.FromErr(err)
 	}
+	if err := d.Set("always_enabled", family.AlwaysEnabled); err != nil {
+		return diag.FromErr(err)
+	}
 	if err := d.Set("rule_ids", family.RuleIds); err != nil {
 		return diag.FromErr(err)
 	}
-
 	return diags
 }
 
 func resourceFamilyUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 
 	client := m.(*Client)
-
 	params := families.NewUpdateFamilyParams()
 	params.FamilyID = d.Id()
-	params.Family.Description = d.Get("description").(string)
-	recommended := d.Get("recommended").(bool)
-	params.Family.Recommended = &recommended
+	params.Family = &models.UpdateFamilyInput{}
 
-	err := resource.RetryContext(context.Background(), EnvironmentRetryTimeout, func() *resource.RetryError {
+	if d.HasChange("name") {
+		params.Family.Name = d.Get("name").(string)
+	}
+	if d.HasChange("description") {
+		params.Family.Description = d.Get("description").(string)
+	}
+	if d.HasChange("recommended") {
+		recommended := d.Get("recommended").(bool)
+		params.Family.Recommended = &recommended
+	}
+	if d.HasChange("always_enabled") {
+		alwaysEnabled := d.Get("always_enabled").(bool)
+		params.Family.AlwaysEnabled = &alwaysEnabled
+	}
+	if d.HasChange("rule_ids") {
+		params.Family.RuleIds = getStringSlice(d.Get("rule_ids").([]interface{}))
+	}
+	err := resource.RetryContext(ctx, EnvironmentRetryTimeout, func() *resource.RetryError {
 		_, err := client.Families.UpdateFamily(params, client.Auth)
 		if err != nil {
 			switch err.(type) {
-			case *families.UpdateFamilyForbidden:
-				return resource.NonRetryableError(err)
-			case *families.UpdateFamilyUnauthorized:
-				return resource.NonRetryableError(err)
-			case *families.UpdateFamilyNotFound:
+			case *families.UpdateFamilyBadRequest,
+				*families.UpdateFamilyForbidden,
+				*families.UpdateFamilyUnauthorized,
+				*families.UpdateFamilyNotFound:
 				return resource.NonRetryableError(err)
 			default:
 				return resource.RetryableError(err)
@@ -169,24 +189,22 @@ func resourceFamilyUpdate(ctx context.Context, d *schema.ResourceData, m interfa
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
 	return resourceFamilyRead(ctx, d, m)
 }
 
 func resourceFamilyDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 
 	client := m.(*Client)
-
 	params := families.NewDeleteFamilyParams()
 	params.FamilyID = d.Id()
 
-	err := resource.RetryContext(context.Background(), EnvironmentRetryTimeout, func() *resource.RetryError {
+	err := resource.RetryContext(ctx, EnvironmentRetryTimeout, func() *resource.RetryError {
 		_, err := client.Families.DeleteFamily(params, client.Auth)
 		if err != nil {
 			switch err.(type) {
-			case *families.DeleteFamilyForbidden:
-				return resource.NonRetryableError(err)
-			case *families.DeleteFamilyUnauthorized:
+			case *families.DeleteFamilyBadRequest,
+				*families.DeleteFamilyForbidden,
+				*families.DeleteFamilyUnauthorized:
 				return resource.NonRetryableError(err)
 			default:
 				return resource.RetryableError(err)
