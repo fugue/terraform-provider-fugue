@@ -16,7 +16,7 @@ import (
 type Notification struct {
 
 	// The date and time the notification was created.
-	CreatedAt int64 `json:"created_at,omitempty"`
+	// CreatedAt
 
 	// Principal the created the notification.
 	CreatedBy string `json:"created_by,omitempty"`
@@ -25,7 +25,7 @@ type Notification struct {
 	Emails []string `json:"emails"`
 
 	// List of maps from environment id to name the notification is attached to.
-	Environments []map[string]string `json:"environments"`
+	Environments map[string]string `json:"environments"`
 
 	// List of events the notification is triggered on.
 	Events []string `json:"events"`
@@ -43,7 +43,7 @@ type Notification struct {
 	TopicArn string `json:"topic_arn,omitempty"`
 
 	// AWS The date and time the notification was last updated.
-	UpdatedAt int64 `json:"updated_at,omitempty"`
+	// UpdatedAt
 
 	// Principal that last updated the notification.
 	UpdatedBy string `json:"updated_by,omitempty"`

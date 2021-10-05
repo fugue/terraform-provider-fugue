@@ -1,0 +1,1 @@
+terraform import fugue_azure_environment.env1 dc047cba-1e1c-453e-902e-a9b90e6a19ea

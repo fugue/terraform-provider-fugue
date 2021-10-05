@@ -15,6 +15,7 @@ import (
 
 func dataSourceAwsTypes() *schema.Resource {
 	return &schema.Resource{
+		Description: "`fugue_aws_environment` data source can be used to retrieve information about a Fugue AWS environment.",
 		ReadContext: dataSourceAwsTypesRead,
 		Schema: map[string]*schema.Schema{
 			"region": {

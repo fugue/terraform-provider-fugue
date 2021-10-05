@@ -31,9 +31,17 @@ func Provider() *schema.Provider {
 			"fugue_azure_environment":  resourceAzureEnvironment(),
 			"fugue_rule_waiver":        resourceRuleWaiver(),
 			"fugue_rule":               resourceRule(),
+			"fugue_family":             resourceFamily(),
+			"fugue_notification":       resourceNotification(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"fugue_aws_types": dataSourceAwsTypes(),
+			"fugue_aws_types":    dataSourceAwsTypes(),
+			"fugue_environment":  dataSourceEnvironment(),
+			"fugue_environments": dataSourcePluralSchema(dataSourcePluralInfo{SingularEquivalent: "fugue_environment"}, dataSourceEnvironmentsRead),
+			"fugue_rule":         dataSourceRule(),
+			"fugue_rules":        dataSourcePluralSchema(dataSourcePluralInfo{SingularEquivalent: "fugue_rule"}, dataSourceRulesRead),
+			"fugue_rule_waiver":  dataSourceRuleWaiver(),
+			"fugue_rule_waivers": dataSourcePluralSchema(dataSourcePluralInfo{SingularEquivalent: "fugue_rule_waiver"}, dataSourceRuleWaiversRead),
 		},
 		ConfigureContextFunc: providerConfigure,
 	}
