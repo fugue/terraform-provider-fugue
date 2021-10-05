@@ -3,12 +3,12 @@
 page_title: "fugue_family Resource - terraform-provider-fugue"
 subcategory: ""
 description: |-
-  fugue_family manages the code and configuration for a family in Fugue.
+  fugue_family manages a custom compliance family in Fugue.
 ---
 
 # fugue_family (Resource)
 
-`fugue_family` manages the code and configuration for a family in Fugue.
+`fugue_family` manages a custom compliance family in Fugue.
 
 ## Example Usage
 
@@ -30,6 +30,7 @@ resource "fugue_family" "family1" {
 
 ### Optional
 
+- **always_enabled** (Boolean) Whether the family will automatically be enabled on all environments.
 - **recommended** (Boolean) Whether the family is recommended.
 - **rule_ids** (List of String) The rule IDs which belong to this family.
 

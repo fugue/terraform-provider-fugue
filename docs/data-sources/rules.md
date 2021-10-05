@@ -30,7 +30,7 @@ output "all_enabled_rule_ids" {
 
 ### Optional
 
-- **filter** (Block Set) Filters.  The result is restricted to the intersection of the result of all filter. (see [below for nested schema](#nestedblock--filter))
+- **filter** (Block Set) Filters. The result is restricted to the intersection of the result of all filters. (see [below for nested schema](#nestedblock--filter))
 - **id** (String) The ID of this resource.
 
 ### Read-Only
@@ -43,6 +43,6 @@ output "all_enabled_rule_ids" {
 Required:
 
 - **name** (String) Name of the field you want to apply this filter to.
-- **values** (List of String) Filter to apply (using glob syntax).
+- **values** (List of String) Value to match
 
 

@@ -3,12 +3,12 @@
 page_title: "fugue_notification Resource - terraform-provider-fugue"
 subcategory: ""
 description: |-
-  fugue_notification manages the code and configuration for a notification in Fugue.
+  fugue_notification manages a notification in Fugue.
 ---
 
 # fugue_notification (Resource)
 
-`fugue_notification` manages the code and configuration for a notification in Fugue.
+`fugue_notification` manages a notification in Fugue.
 
 ## Example Usage
 
@@ -26,14 +26,14 @@ resource "fugue_notification" "notification1" {
 
 ### Required
 
-- **emails** (List of String) The e-mail addresses to be notified.
-- **environments** (List of String) The environments of the notification
-- **events** (List of String) The events of the notification
-- **name** (String) The name of the notification.  Must be unique.
+- **environments** (Set of String) The environments to be monitored.
+- **events** (Set of String) Event types to be monitored.
+- **name** (String) The name of the notification. Must be unique.
 
 ### Optional
 
-- **topic_arn** (String) Whether the notification is recommended.
+- **emails** (Set of String) The email addresses to be notified.
+- **topic_arn** (String) SNS topic ARN to be notified.
 
 ### Read-Only
 
