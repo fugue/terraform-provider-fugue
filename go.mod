@@ -7,7 +7,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/aws/aws-sdk-go v1.40.24 // indirect
 	github.com/fatih/color v1.10.0 // indirect
-	github.com/fugue/fugue-client v0.16.0
+	github.com/fugue/fugue-client v0.16.1-0.20211005043439-349b701f0ad5
 	github.com/go-openapi/analysis v0.20.1 // indirect
 	github.com/go-openapi/errors v0.20.0 // indirect
 	github.com/go-openapi/runtime v0.19.29

@@ -88,7 +88,7 @@ github.com/davecgh/go-spew/spew
 # github.com/fatih/color v1.10.0
 ## explicit
 github.com/fatih/color
-# github.com/fugue/fugue-client v0.16.0
+# github.com/fugue/fugue-client v0.16.1-0.20211005043439-349b701f0ad5
 ## explicit
 github.com/fugue/fugue-client/client
 github.com/fugue/fugue-client/client/audit_log
