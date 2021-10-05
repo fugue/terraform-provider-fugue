@@ -14,9 +14,7 @@ import (
 func dataSourceEnvironment() *schema.Resource {
 	return &schema.Resource{
 		Description: "`fugue_environment` data source can be used to retrieve information about a Fugue environment.",
-
 		ReadContext: dataSourceEnvironmentRead,
-
 		Schema: map[string]*schema.Schema{
 			"filter": dataSourceFiltersSchema(),
 
@@ -40,11 +38,11 @@ func dataSourceEnvironment() *schema.Resource {
 }
 
 func dataSourceEnvironmentCommonRead(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*models.Environment, diag.Diagnostics) {
-	client := m.(*Client)
 
+	client := m.(*Client)
 	var filtered []*models.Environment
 	filters := getDataSourceFilters(d)
-	filtersJSON, err := getQueryJSON(filters)
+	filtersJSON, err := getQueryJSON(serverSideFilters(filters), 1)
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -54,42 +52,34 @@ func dataSourceEnvironmentCommonRead(ctx context.Context, d *schema.ResourceData
 		offset := int64(0)
 		maxItems := int64(100)
 		isTruncated := true
-
 		params.Offset = &offset
 		params.MaxItems = &maxItems
 		if len(filters) > 0 {
 			params.Query = &filtersJSON
-			log.Printf("[INFO] XXX Query: %+v", params.Query)
-		} else {
-			log.Printf("[INFO] XXX NO QUERY")
 		}
-
 		for isTruncated {
 			resp, err := client.Environments.ListEnvironments(params, client.Auth)
 			if err != nil {
-				log.Printf("[WARN] Get environment error: %s", err.Error())
+				log.Printf("[WARN] List environments error: %s", err.Error())
 				switch err.(type) {
-				case *environments.GetEnvironmentInternalServerError:
+				case *environments.ListEnvironmentsInternalServerError:
 					return resource.RetryableError(err)
 				default:
 					return resource.NonRetryableError(err)
 				}
 			}
-
 			for _, env := range resp.Payload.Items {
-				if !dataSourceCheckFilter(d, "name", env.Name) {
+				if !dataSourceCheckFilter(filters, "name", env.Name) {
 					continue
 				}
-				if !dataSourceCheckFilter(d, "id", env.ID) {
+				if !dataSourceCheckFilter(filters, "id", env.ID) {
 					continue
 				}
-				if !dataSourceCheckFilter(d, "cloud_provider", env.Provider) {
+				if !dataSourceCheckFilter(filters, "cloud_provider", env.Provider) {
 					continue
 				}
-
 				filtered = append(filtered, env)
 			}
-
 			isTruncated = resp.Payload.IsTruncated
 			offset = resp.Payload.NextOffset
 		}
@@ -98,7 +88,6 @@ func dataSourceEnvironmentCommonRead(ctx context.Context, d *schema.ResourceData
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
-
 	return filtered, nil
 }
 
@@ -107,13 +96,10 @@ func dataSourceEnvironmentRead(ctx context.Context, d *schema.ResourceData, m in
 	if diags != nil {
 		return diags
 	}
-
 	if diags := dataSourceVerifySingleResult(len(filtered)); diags != nil {
 		return diags
 	}
-
 	result := filtered[0]
-
 	d.SetId(result.ID)
 	if err := d.Set("name", result.Name); err != nil {
 		return diag.FromErr(err)
@@ -121,7 +107,6 @@ func dataSourceEnvironmentRead(ctx context.Context, d *schema.ResourceData, m in
 	if err := d.Set("cloud_provider", result.Provider); err != nil {
 		return diag.FromErr(err)
 	}
-
 	return diags
 }
 
@@ -130,16 +115,13 @@ func dataSourceEnvironmentsRead(ctx context.Context, d *schema.ResourceData, m i
 	if diags != nil {
 		return diags
 	}
-
 	var ids []string
 	for _, env := range filtered {
 		ids = append(ids, env.ID)
 	}
-
 	d.SetId(dataSourceHashFilter("fugue_environments", d.Get("filter")))
 	if err := d.Set("ids", ids); err != nil {
 		return diag.FromErr(err)
 	}
-
 	return diags
 }

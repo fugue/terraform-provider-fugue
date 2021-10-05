@@ -14,9 +14,7 @@ import (
 func dataSourceRuleWaiver() *schema.Resource {
 	return &schema.Resource{
 		Description: "`fugue_rule_waiver` data source can be used to retrieve information about a Fugue rule waiver.",
-
 		ReadContext: dataSourceRuleWaiverRead,
-
 		Schema: map[string]*schema.Schema{
 			"filter": dataSourceFiltersSchema(),
 
@@ -70,11 +68,11 @@ func dataSourceRuleWaiver() *schema.Resource {
 }
 
 func dataSourceRuleWaiverCommonRead(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*models.RuleWaiver, diag.Diagnostics) {
-	client := m.(*Client)
 
+	client := m.(*Client)
 	var filtered []*models.RuleWaiver
 	filters := getDataSourceFilters(d)
-	filtersJSON, err := getQueryJSON(filters)
+	filtersJSON, err := getQueryJSON(serverSideFilters(filters), 1)
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -84,57 +82,46 @@ func dataSourceRuleWaiverCommonRead(ctx context.Context, d *schema.ResourceData,
 		offset := int64(0)
 		maxItems := int64(100)
 		isTruncated := true
-
 		params.Offset = &offset
 		params.MaxItems = &maxItems
 		if len(filters) > 0 {
 			params.Query = &filtersJSON
 		}
-
 		for isTruncated {
 			resp, err := client.RuleWaivers.ListRuleWaivers(params, client.Auth)
 			if err != nil {
-				log.Printf("[WARN] Get waiver error: %s", err.Error())
+				log.Printf("[WARN] List waivers error: %s", err.Error())
 				switch err.(type) {
-				case *rule_waivers.GetRuleWaiverInternalServerError:
+				case *rule_waivers.ListRuleWaiversInternalServerError:
 					return resource.RetryableError(err)
 				default:
 					return resource.NonRetryableError(err)
 				}
 			}
-
 			for _, waiver := range resp.Payload.Items {
-				if !dataSourceCheckFilterP(d, "name", waiver.Name) {
+				if !dataSourceCheckFilterP(filters, "name", waiver.Name) {
 					continue
 				}
-				if !dataSourceCheckFilterP(d, "id", waiver.ID) {
+				if !dataSourceCheckFilterP(filters, "id", waiver.ID) {
 					continue
 				}
-				if !dataSourceCheckFilterP(d, "environment_id", waiver.EnvironmentID) {
+				if !dataSourceCheckFilterP(filters, "environment_id", waiver.EnvironmentID) {
 					continue
 				}
-				if !dataSourceCheckFilter(d, "comment", waiver.Comment) {
+				if !dataSourceCheckFilterP(filters, "rule_id", waiver.RuleID) {
 					continue
 				}
-				if !dataSourceCheckFilterP(d, "rule_id", waiver.RuleID) {
+				if !dataSourceCheckFilterP(filters, "resource_id", waiver.ResourceID) {
 					continue
 				}
-				if !dataSourceCheckFilterP(d, "resource_id", waiver.ResourceID) {
+				if !dataSourceCheckFilterP(filters, "resource_provider", waiver.ResourceProvider) {
 					continue
 				}
-				if !dataSourceCheckFilterP(d, "resource_provider", waiver.ResourceProvider) {
+				if !dataSourceCheckFilterP(filters, "resource_type", waiver.ResourceType) {
 					continue
 				}
-				if !dataSourceCheckFilterP(d, "resource_type", waiver.ResourceType) {
-					continue
-				}
-				if !dataSourceCheckFilter(d, "resource_tag", waiver.ResourceTag) {
-					continue
-				}
-
 				filtered = append(filtered, waiver)
 			}
-
 			isTruncated = resp.Payload.IsTruncated
 			offset = resp.Payload.NextOffset
 		}
@@ -143,7 +130,6 @@ func dataSourceRuleWaiverCommonRead(ctx context.Context, d *schema.ResourceData,
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
-
 	return filtered, nil
 }
 
@@ -152,13 +138,10 @@ func dataSourceRuleWaiverRead(ctx context.Context, d *schema.ResourceData, m int
 	if diags != nil {
 		return diags
 	}
-
 	if diags := dataSourceVerifySingleResult(len(filtered)); diags != nil {
 		return diags
 	}
-
 	result := filtered[0]
-
 	d.SetId(*result.ID)
 	if err := d.Set("name", result.Name); err != nil {
 		return diag.FromErr(err)
@@ -184,7 +167,6 @@ func dataSourceRuleWaiverRead(ctx context.Context, d *schema.ResourceData, m int
 	if err := d.Set("resource_tag", result.ResourceTag); err != nil {
 		return diag.FromErr(err)
 	}
-
 	return diags
 }
 
@@ -193,16 +175,13 @@ func dataSourceRuleWaiversRead(ctx context.Context, d *schema.ResourceData, m in
 	if diags != nil {
 		return diags
 	}
-
 	var ids []string
 	for _, waiver := range filtered {
 		ids = append(ids, *waiver.ID)
 	}
-
 	d.SetId(dataSourceHashFilter("fugue_waivers", d.Get("filter")))
 	if err := d.Set("ids", ids); err != nil {
 		return diag.FromErr(err)
 	}
-
 	return diags
 }

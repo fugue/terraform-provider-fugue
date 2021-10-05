@@ -14,9 +14,7 @@ import (
 func dataSourceRule() *schema.Resource {
 	return &schema.Resource{
 		Description: "`fugue_rule` data source can be used to retrieve information about a Fugue rule.",
-
 		ReadContext: dataSourceRuleRead,
-
 		Schema: map[string]*schema.Schema{
 			"filter": dataSourceFiltersSchema(),
 
@@ -35,7 +33,6 @@ func dataSourceRule() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
-
 			"description": {
 				Description: "The description of this rule.",
 				Type:        schema.TypeString,
@@ -71,56 +68,67 @@ func dataSourceRule() *schema.Resource {
 }
 
 func dataSourceRuleCommonRead(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*models.CustomRule, diag.Diagnostics) {
-	client := m.(*Client)
 
+	client := m.(*Client)
 	var filtered []*models.CustomRule
 	filters := getDataSourceFilters(d)
-	filtersJSON, err := getQueryJSON(filters)
-	if err != nil {
-		return nil, diag.FromErr(err)
-	}
 
-	err = resource.RetryContext(context.Background(), EnvironmentRetryTimeout, func() *resource.RetryError {
+	// The server-side query parameter is not yet hooked up. These lines
+	// can be enabled once that is in place. Until then, filtering will be
+	// applied on the client-side only.
+	// filtersJSON, err := getQueryJSON(serverSideFilters(filters), 0)
+	// if err != nil {
+	// 	return nil, diag.FromErr(err)
+	// }
+
+	err := resource.RetryContext(context.Background(), EnvironmentRetryTimeout, func() *resource.RetryError {
 		params := custom_rules.NewListCustomRulesParams()
 		offset := int64(0)
 		maxItems := int64(100)
 		isTruncated := true
-
 		params.Offset = &offset
 		params.MaxItems = &maxItems
-		if len(filters) > 0 {
-			params.Query = &filtersJSON
-			log.Printf("[INFO] XYZ RULE FILTER: %+v", *params.Query)
-		} else {
-			log.Printf("[INFO] XYZ NO RULE FILTER")
-		}
+
+		// See note above regarding server-side filtering.
+		// if len(filters) > 0 {
+		// 	params.Query = &filtersJSON
+		// }
 
 		for isTruncated {
 			resp, err := client.CustomRules.ListCustomRules(params, client.Auth)
 			if err != nil {
-				log.Printf("[WARN] Get rule error: %s", err.Error())
+				log.Printf("[WARN] List rules error: %s", err.Error())
 				switch err.(type) {
-				case *custom_rules.GetCustomRuleInternalServerError:
+				case *custom_rules.ListCustomRulesInternalServerError:
 					return resource.RetryableError(err)
 				default:
 					return resource.NonRetryableError(err)
 				}
 			}
-
-			for _, env := range resp.Payload.Items {
-				if !dataSourceCheckFilter(d, "name", env.Name) {
+			for _, rule := range resp.Payload.Items {
+				if !dataSourceCheckFilter(filters, "name", rule.Name) {
 					continue
 				}
-				if !dataSourceCheckFilter(d, "id", env.ID) {
+				if !dataSourceCheckFilter(filters, "id", rule.ID) {
 					continue
 				}
-				if !dataSourceCheckFilter(d, "cloud_provider", env.Provider) {
+				if !dataSourceCheckFilter(filters, "cloud_provider", rule.Provider) {
 					continue
 				}
-
-				filtered = append(filtered, env)
+				if !dataSourceCheckFilter(filters, "status", rule.Status) {
+					continue
+				}
+				if !dataSourceCheckFilter(filters, "description", rule.Description) {
+					continue
+				}
+				if !dataSourceCheckFilter(filters, "severity", rule.Severity) {
+					continue
+				}
+				if !dataSourceCheckFilter(filters, "resource_type", rule.ResourceType) {
+					continue
+				}
+				filtered = append(filtered, rule)
 			}
-
 			isTruncated = resp.Payload.IsTruncated
 			offset = resp.Payload.NextOffset
 		}
@@ -129,7 +137,6 @@ func dataSourceRuleCommonRead(ctx context.Context, d *schema.ResourceData, m int
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
-
 	return filtered, nil
 }
 
@@ -138,13 +145,10 @@ func dataSourceRuleRead(ctx context.Context, d *schema.ResourceData, m interface
 	if diags != nil {
 		return diags
 	}
-
 	if diags := dataSourceVerifySingleResult(len(filtered)); diags != nil {
 		return diags
 	}
-
 	result := filtered[0]
-
 	d.SetId(result.ID)
 	if err := d.Set("name", result.Name); err != nil {
 		return diag.FromErr(err)
@@ -170,7 +174,6 @@ func dataSourceRuleRead(ctx context.Context, d *schema.ResourceData, m interface
 	if err := d.Set("status", result.Status); err != nil {
 		return diag.FromErr(err)
 	}
-
 	return diags
 }
 
@@ -179,16 +182,13 @@ func dataSourceRulesRead(ctx context.Context, d *schema.ResourceData, m interfac
 	if diags != nil {
 		return diags
 	}
-
 	var ids []string
-	for _, env := range filtered {
-		ids = append(ids, env.ID)
+	for _, rule := range filtered {
+		ids = append(ids, rule.ID)
 	}
-
 	d.SetId(dataSourceHashFilter("fugue_rules", d.Get("filter")))
 	if err := d.Set("ids", ids); err != nil {
 		return diag.FromErr(err)
 	}
-
 	return diags
 }
