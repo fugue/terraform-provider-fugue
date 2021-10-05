@@ -1,14 +1,11 @@
-data "fugue_environment" "environment1" {
+
+data "fugue_environment" "example" {
   filter {
-    name   = "name"
-    values = ["Environment Name"]
-  }
-  filter {
-    name   = "cloud_provider"
-    values = ["aws"]
+    name   = "id"
+    values = ["7c0000e0-d19c-41ff-a927-c9584d0bfdf6"]
   }
 }
 
-output "environment_id" {
-  value = data.fugue_environment.environment1.id
+output "environment_name" {
+  value = data.fugue_environment.example.name
 }

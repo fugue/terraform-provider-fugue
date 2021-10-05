@@ -13,15 +13,15 @@ description: |-
 ## Example Usage
 
 ```terraform
-data "fugue_rule" "rule1" {
+data "fugue_rule" "example" {
   filter {
-    name   = "name"
-    values = ["Rule Name"]
+    name   = "id"
+    values = ["bcc49dd2-dbc8-4599-827c-645e442097e4"] # custom rule ID
   }
 }
 
 output "rule_id" {
-  value = data.fugue_rule.rule1.id
+  value = data.fugue_rule.example.id
 }
 ```
 

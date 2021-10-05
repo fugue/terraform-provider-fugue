@@ -1,3 +1,4 @@
+
 data "fugue_environments" "all_aws_environments" {
   filter {
     name   = "cloud_provider"

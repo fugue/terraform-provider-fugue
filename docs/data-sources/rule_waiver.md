@@ -13,23 +13,15 @@ description: |-
 ## Example Usage
 
 ```terraform
-data "fugue_rule_waiver" "waiver1" {
+data "fugue_rule_waiver" "example" {
   filter {
-    name   = "name"
-    values = ["Waiver Name"]
-  }
-  filter {
-    name   = "environment_id"
-    values = ["52604038-7989-497b-9b64-926299fc97f0"]
-  }
-  filter {
-    name   = "rule_id"
-    values = ["c4f2aeeb-8642-4410-bee8-55b2c9116067"]
+    name   = "id"
+    values = ["8e74d107-bf6c-4b56-8c1b-895484aa825a"] # waiver ID
   }
 }
 
-output "waiver_id" {
-  value = data.fugue_waiver.waiver1.id
+output "waiver_name" {
+  value = data.fugue_rule_waiver.example.name
 }
 ```
 

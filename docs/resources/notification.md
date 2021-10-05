@@ -13,11 +13,25 @@ description: |-
 ## Example Usage
 
 ```terraform
-resource "fugue_notification" "notification1" {
-  name         = "My Notification"
-  emails       = ["foo@example.com", "bar@example.com"]
+resource "fugue_notification" "security_emails" {
+  name         = "Compliance notifications"
+  emails       = ["security-team@example.com", "compliance-team@example.com"]
   environments = ["7c0000e0-d19c-41ff-a927-c9584d0bfdf6", "f305ef6d-10b8-44f7-9200-8ccfffb383d8"]
-  events       = ["remediation", "compliance", "drift"]
+  events       = ["compliance"]
+}
+
+resource "fugue_notification" "drift_emails" {
+  name         = "Drift notifications"
+  emails       = ["joe@acme.com"]
+  environments = ["7c0000e0-d19c-41ff-a927-c9584d0bfdf6"]
+  events       = ["drift"]
+}
+
+resource "fugue_notification" "sns_topic_example" {
+  name         = "Drift notifications"
+  topic_arn    = "arn:aws:sns:us-east-2:0123456789:your-topic-arn"
+  environments = ["7c0000e0-d19c-41ff-a927-c9584d0bfdf6"]
+  events       = ["compliance", "drift"]
 }
 ```
 
@@ -44,5 +58,5 @@ resource "fugue_notification" "notification1" {
 Import is supported using the following syntax:
 
 ```shell
-terraform import fugue_notification.notification1 93a51f7f-8563-4c3c-9234-d8d787f9fdb7
+terraform import fugue_notification.example 93a51f7f-8563-4c3c-9234-d8d787f9fdb7
 ```
