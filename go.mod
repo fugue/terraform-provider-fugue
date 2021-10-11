@@ -10,7 +10,7 @@ require (
 	github.com/fugue/fugue-client v0.16.1-0.20211005043439-349b701f0ad5
 	github.com/go-openapi/analysis v0.20.1 // indirect
 	github.com/go-openapi/errors v0.20.0 // indirect
-	github.com/go-openapi/runtime v0.19.29
+	github.com/go-openapi/runtime v0.20.0
 	github.com/go-openapi/strfmt v0.20.1
 	github.com/go-openapi/swag v0.19.15 // indirect
 	github.com/go-openapi/validate v0.20.2 // indirect
