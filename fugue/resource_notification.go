@@ -73,10 +73,22 @@ func resourceNotificationCreate(ctx context.Context, d *schema.ResourceData, m i
 	client := m.(*Client)
 
 	name := d.Get("name").(string)
-	emails := getStringSlice(d.Get("emails").([]interface{}))
-	environments := getStringSlice(d.Get("environments").([]interface{}))
-	events := getStringSlice(d.Get("events").([]interface{}))
 	topicArn := d.Get("topic_arn").(string)
+
+	var emails []string
+	if emailsSetting, ok := d.GetOk("emails"); ok {
+		emails = expandStringSet(emailsSetting.(*schema.Set))
+	}
+
+	var environments []string
+	if envsSetting, ok := d.GetOk("environments"); ok {
+		environments = expandStringSet(envsSetting.(*schema.Set))
+	}
+
+	var events []string
+	if eventsSetting, ok := d.GetOk("events"); ok {
+		events = expandStringSet(eventsSetting.(*schema.Set))
+	}
 
 	for _, event := range events {
 		if !notificationAllowedEvents[event] {
