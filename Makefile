@@ -1,7 +1,7 @@
 TEST?=$$(go list ./... | grep -v 'vendor')
 NAME=fugue/fugue
 BINARY=terraform-provider-fugue
-VERSION=0.0.7
+VERSION=0.0.8
 OS_ARCH=darwin_amd64
 
 default: install
@@ -15,6 +15,7 @@ help: ## Display this help
 
 release: ## Build release binaries
 	GOOS=darwin GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_darwin_amd64
+	GOOS=darwin GOARCH=arm64 go build -o ./bin/${BINARY}_${VERSION}_darwin_arm64
 	GOOS=freebsd GOARCH=386 go build -o ./bin/${BINARY}_${VERSION}_freebsd_386
 	GOOS=freebsd GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_freebsd_amd64
 	GOOS=freebsd GOARCH=arm go build -o ./bin/${BINARY}_${VERSION}_freebsd_arm
