@@ -16,17 +16,14 @@ require (
 	github.com/go-openapi/validate v0.20.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
-	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/hcl/v2 v2.10.0 // indirect
 	github.com/hashicorp/terraform-plugin-docs v0.2.0
-	github.com/hashicorp/terraform-plugin-sdk/v2 v2.7.0
+	github.com/hashicorp/terraform-plugin-sdk/v2 v2.10.0
 	github.com/jhump/protoreflect v1.6.1 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/posener/complete v1.2.1 // indirect
 	github.com/ryanuber/go-glob v1.0.0
 	go.mongodb.org/mongo-driver v1.5.2 // indirect
-	golang.org/x/sys v0.0.0-20210611083646-a4fc73990273 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	golang.org/x/tools v0.1.3 // indirect
 	google.golang.org/api v0.48.0 // indirect

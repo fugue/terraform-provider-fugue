@@ -1,4 +1,4 @@
-package tf5server
+package tf6server
 
 import (
 	"context"
@@ -6,17 +6,19 @@ import (
 	"net/rpc"
 
 	"github.com/hashicorp/go-plugin"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5/internal/tfplugin5"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6/internal/tfplugin6"
 	"google.golang.org/grpc"
 )
 
 // GRPCProviderPlugin is an implementation of the
 // github.com/hashicorp/go-plugin#Plugin and
 // github.com/hashicorp/go-plugin#GRPCPlugin interfaces, indicating how to
-// serve tfprotov5.ProviderServers as gRPC plugins for go-plugin.
+// serve tfprotov6.ProviderServers as gRPC plugins for go-plugin.
 type GRPCProviderPlugin struct {
-	GRPCProvider func() tfprotov5.ProviderServer
+	GRPCProvider func() tfprotov6.ProviderServer
+	Opts         []ServeOpt
+	Name         string
 }
 
 // Server always returns an error; we're only implementing the GRPCPlugin
@@ -40,6 +42,6 @@ func (p *GRPCProviderPlugin) GRPCClient(context.Context, *plugin.GRPCBroker, *gr
 // GRPCServer registers the gRPC provider server with the gRPC server that
 // go-plugin is standing up.
 func (p *GRPCProviderPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
-	tfplugin5.RegisterProviderServer(s, New(p.GRPCProvider()))
+	tfplugin6.RegisterProviderServer(s, New(p.Name, p.GRPCProvider(), p.Opts...))
 	return nil
 }
