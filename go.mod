@@ -17,7 +17,7 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/hcl/v2 v2.10.0 // indirect
-	github.com/hashicorp/terraform-plugin-docs v0.2.0
+	github.com/hashicorp/terraform-plugin-docs v0.5.1
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.10.0
 	github.com/jhump/protoreflect v1.6.1 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
