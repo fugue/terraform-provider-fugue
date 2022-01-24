@@ -38,7 +38,7 @@ type byteStreamOpts struct {
 	Close bool
 }
 
-// ByteStreamConsumer creates a consmer for byte streams,
+// ByteStreamConsumer creates a consumer for byte streams,
 // takes a Writer/BinaryUnmarshaler interface or binary slice by reference,
 // and reads from the provided reader
 func ByteStreamConsumer(opts ...byteStreamOpt) Consumer {
@@ -74,6 +74,13 @@ func ByteStreamConsumer(opts ...byteStreamOpt) Consumer {
 
 		if bu, ok := data.(encoding.BinaryUnmarshaler); ok {
 			return bu.UnmarshalBinary(b)
+		}
+
+		if data != nil {
+			if str, ok := data.(*string); ok {
+				*str = string(b)
+				return nil
+			}
 		}
 
 		if t := reflect.TypeOf(data); data != nil && t.Kind() == reflect.Ptr {
