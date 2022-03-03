@@ -33,6 +33,11 @@ func dataSourceAwsTypes() *schema.Resource {
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"beta": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 		},
 	}
 }
@@ -54,6 +59,10 @@ func dataSourceAwsTypesRead(ctx context.Context, d *schema.ResourceData, m inter
 		regionForTypes = region.(string)
 	}
 	params.Region = &regionForTypes
+
+	if val := d.Get("beta").(bool); val {
+		params.BetaResources = &val
+	}
 
 	var typeMetadata *models.ResourceTypeMetadata
 
