@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     fugue = {
-      version = "0.0.6"
+      version = "0.0.9"
       source  = "fugue/fugue"
     }
   }

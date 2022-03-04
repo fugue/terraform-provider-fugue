@@ -1,7 +1,7 @@
 TEST?=$$(go list ./... | grep -v 'vendor')
 NAME=fugue/fugue
 BINARY=terraform-provider-fugue
-VERSION=0.0.8
+VERSION=0.0.9
 OS_ARCH=darwin_amd64
 
 default: install
