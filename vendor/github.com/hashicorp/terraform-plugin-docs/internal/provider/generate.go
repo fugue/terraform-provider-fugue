@@ -10,8 +10,14 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/hashicorp/go-version"
+	install "github.com/hashicorp/hc-install"
+	"github.com/hashicorp/hc-install/checkpoint"
+	"github.com/hashicorp/hc-install/fs"
+	"github.com/hashicorp/hc-install/product"
+	"github.com/hashicorp/hc-install/releases"
+	"github.com/hashicorp/hc-install/src"
 	"github.com/hashicorp/terraform-exec/tfexec"
-	"github.com/hashicorp/terraform-exec/tfinstall"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/mitchellh/cli"
 )
@@ -34,9 +40,10 @@ var (
 	// templated website directory defaults
 	websiteTmp = ""
 
-	websiteSourceDir            = "templates" // used for override content
-	websiteResourceFileTemplate = resourceFileTemplate("resources/{{ .ShortName }}.md.tmpl")
-	websiteResourceFileStatic   = []resourceFileTemplate{
+	websiteSourceDir                    = "templates" // used for override content
+	websiteResourceFileTemplate         = resourceFileTemplate("resources/{{ .ShortName }}.md.tmpl")
+	websiteResourceFallbackFileTemplate = resourceFileTemplate("resources.md.tmpl")
+	websiteResourceFileStatic           = []resourceFileTemplate{
 		resourceFileTemplate("resources/{{ .ShortName }}.md"),
 		// TODO: warn for all of these, as they won't render? massage them to the proper output file name?
 		resourceFileTemplate("resources/{{ .ShortName }}.markdown"),
@@ -47,8 +54,9 @@ var (
 		resourceFileTemplate("r/{{ .ShortName }}.html.markdown"),
 		resourceFileTemplate("r/{{ .ShortName }}.html.md"),
 	}
-	websiteDataSourceFileTemplate = resourceFileTemplate("data-sources/{{ .ShortName }}.md.tmpl")
-	websiteDataSourceFileStatic   = []resourceFileTemplate{
+	websiteDataSourceFileTemplate         = resourceFileTemplate("data-sources/{{ .ShortName }}.md.tmpl")
+	websiteDataSourceFallbackFileTemplate = resourceFileTemplate("data-sources.md.tmpl")
+	websiteDataSourceFileStatic           = []resourceFileTemplate{
 		resourceFileTemplate("data-sources/{{ .ShortName }}.md"),
 		// TODO: warn for all of these, as they won't render? massage them to the proper output file name?
 		resourceFileTemplate("data-sources/{{ .ShortName }}.markdown"),
@@ -70,6 +78,7 @@ var (
 
 type generator struct {
 	legacySidebar bool
+	tfVersion     string
 
 	ui cli.Ui
 }
@@ -82,9 +91,10 @@ func (g *generator) warnf(format string, a ...interface{}) {
 	g.ui.Warn(fmt.Sprintf(format, a...))
 }
 
-func Generate(ui cli.Ui, legacySidebar bool) error {
+func Generate(ui cli.Ui, legacySidebar bool, tfVersion string) error {
 	g := &generator{
 		legacySidebar: legacySidebar,
+		tfVersion:     tfVersion,
 
 		ui: ui,
 	}
@@ -153,11 +163,13 @@ func (g *generator) Generate(ctx context.Context) error {
 		return err
 	}
 
+	g.infof("rendering missing docs")
 	err = g.renderMissingDocs(providerName, providerSchema)
 	if err != nil {
 		return err
 	}
 
+	g.infof("rendering static website")
 	err = g.renderStaticWebsite(providerName, providerSchema)
 	if err != nil {
 		return err
@@ -172,7 +184,7 @@ func (g *generator) Generate(ctx context.Context) error {
 	return nil
 }
 
-func (g *generator) renderMissingResourceDoc(providerName, name, typeName string, schema *tfjson.Schema, websiteFileTemplate resourceFileTemplate, websiteStaticCandidateTemplates []resourceFileTemplate, examplesFileTemplate resourceFileTemplate, examplesImportTemplate *resourceFileTemplate) error {
+func (g *generator) renderMissingResourceDoc(providerName, name, typeName string, schema *tfjson.Schema, websiteFileTemplate resourceFileTemplate, fallbackWebsiteFileTemplate resourceFileTemplate, websiteStaticCandidateTemplates []resourceFileTemplate, examplesFileTemplate resourceFileTemplate, examplesImportTemplate *resourceFileTemplate) error {
 	tmplPath, err := websiteFileTemplate.Render(name, providerName)
 	if err != nil {
 		return fmt.Errorf("unable to render path for resource %q: %w", name, err)
@@ -220,8 +232,24 @@ func (g *generator) renderMissingResourceDoc(providerName, name, typeName string
 		}
 	}
 
+	targetResourceTemplate := defaultResourceTemplate
+
+	fallbackTmplPath, err := fallbackWebsiteFileTemplate.Render(name, providerName)
+	if err != nil {
+		return fmt.Errorf("unable to render path for resource %q: %w", name, err)
+	}
+	fallbackTmplPath = filepath.Join(websiteTmp, websiteSourceDir, fallbackTmplPath)
+	if fileExists(fallbackTmplPath) {
+		g.infof("resource %q fallback template exists", name)
+		tmplData, err := ioutil.ReadFile(fallbackTmplPath)
+		if err != nil {
+			return fmt.Errorf("unable to read file %q: %w", fallbackTmplPath, err)
+		}
+		targetResourceTemplate = resourceTemplate(tmplData)
+	}
+
 	g.infof("generating template for %q", name)
-	md, err := defaultResourceTemplate.Render(name, providerName, typeName, examplePath, importPath, schema)
+	md, err := targetResourceTemplate.Render(name, providerName, typeName, examplePath, importPath, schema)
 	if err != nil {
 		return fmt.Errorf("unable to render template for %q: %w", name, err)
 	}
@@ -287,6 +315,7 @@ func (g *generator) renderMissingDocs(providerName string, providerSchema *tfjso
 	for name, schema := range providerSchema.ResourceSchemas {
 		err := g.renderMissingResourceDoc(providerName, name, "Resource", schema,
 			websiteResourceFileTemplate,
+			websiteResourceFallbackFileTemplate,
 			websiteResourceFileStatic,
 			examplesResourceFileTemplate,
 			&examplesResourceImportTemplate)
@@ -299,6 +328,7 @@ func (g *generator) renderMissingDocs(providerName string, providerSchema *tfjso
 	for name, schema := range providerSchema.DataSourceSchemas {
 		err := g.renderMissingResourceDoc(providerName, name, "Data Source", schema,
 			websiteDataSourceFileTemplate,
+			websiteDataSourceFallbackFileTemplate,
 			websiteDataSourceFileStatic,
 			examplesDataSourceFileTemplate,
 			nil)
@@ -342,6 +372,14 @@ func (g *generator) renderStaticWebsite(providerName string, providerSchema *tfj
 			return err
 		}
 
+		relDir, relFile := filepath.Split(rel)
+		relDir = filepath.ToSlash(relDir)
+
+		// skip special top-level generic resource and data source templates
+		if relDir == "" && (relFile == "resources.md.tmpl" || relFile == "data-sources.md.tmpl") {
+			return nil
+		}
+
 		renderedPath := filepath.Join(renderedWebsiteDir, rel)
 		err = os.MkdirAll(filepath.Dir(renderedPath), 0755)
 		if err != nil {
@@ -368,16 +406,13 @@ func (g *generator) renderStaticWebsite(providerName string, providerSchema *tfj
 		defer out.Close()
 
 		g.infof("rendering %q", rel)
-
-		relDir, relFile := filepath.Split(rel)
-		relDir = filepath.ToSlash(relDir)
 		switch relDir {
 		case "data-sources/":
 			resName := shortName + "_" + removeAllExt(relFile)
 			resSchema, ok := providerSchema.DataSourceSchemas[resName]
 			if ok {
 				tmpl := resourceTemplate(tmplData)
-				render, err := tmpl.Render("Data Source", providerName, resName, "", "", resSchema)
+				render, err := tmpl.Render(resName, providerName, "Data Source", "", "", resSchema)
 				if err != nil {
 					return fmt.Errorf("unable to render data source template %q: %w", rel, err)
 				}
@@ -392,7 +427,7 @@ func (g *generator) renderStaticWebsite(providerName string, providerSchema *tfj
 			resSchema, ok := providerSchema.ResourceSchemas[resName]
 			if ok {
 				tmpl := resourceTemplate(tmplData)
-				render, err := tmpl.Render("Resource", providerName, resName, "", "", resSchema)
+				render, err := tmpl.Render(resName, providerName, "Resource", "", "", resSchema)
 				if err != nil {
 					return fmt.Errorf("unable to render resource template %q: %w", rel, err)
 				}
@@ -469,7 +504,31 @@ provider %[1]q {
 		return nil, err
 	}
 
-	tfBin, err := tfinstall.Find(ctx, tfinstall.ExactVersion("0.13.2", tmpDir))
+	i := install.NewInstaller()
+	sources := []src.Source{}
+	if g.tfVersion != "" {
+		g.infof("downloading Terraform CLI binary version from releases.hashicorp.com: %s", g.tfVersion)
+		sources = []src.Source{
+			&releases.ExactVersion{
+				Product:    product.Terraform,
+				Version:    version.Must(version.NewVersion(g.tfVersion)),
+				InstallDir: tmpDir,
+			},
+		}
+	} else {
+		g.infof("using Terraform CLI binary from PATH if available, otherwise downloading latest Terraform CLI binary")
+		sources = []src.Source{
+			&fs.AnyVersion{
+				Product: &product.Terraform,
+			},
+			&checkpoint.LatestVersion{
+				InstallDir: tmpDir,
+				Product:    product.Terraform,
+			},
+		}
+	}
+
+	tfBin, err := i.Ensure(context.Background(), sources)
 	if err != nil {
 		return nil, err
 	}
@@ -479,11 +538,13 @@ provider %[1]q {
 		return nil, err
 	}
 
-	err = tf.Init(ctx, tfexec.GetPlugins(false), tfexec.Get(false), tfexec.PluginDir("./plugins"))
+	g.infof("running terraform init")
+	err = tf.Init(ctx, tfexec.Get(false), tfexec.PluginDir("./plugins"))
 	if err != nil {
 		return nil, err
 	}
 
+	g.infof("getting provider schema")
 	schemas, err := tf.ProvidersSchema(ctx)
 	if err != nil {
 		return nil, err
