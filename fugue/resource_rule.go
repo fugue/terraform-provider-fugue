@@ -2,6 +2,7 @@ package fugue
 
 import (
 	"context"
+	"errors"
 
 	"github.com/fugue/fugue-client/client/custom_rules"
 	"github.com/fugue/fugue-client/models"
@@ -139,6 +140,14 @@ func resourceRuleRead(ctx context.Context, d *schema.ResourceData, m interface{}
 		rule = resp.Payload
 		return nil
 	})
+
+	// If the resource is not found, remove it from local terraform state
+	target := &custom_rules.GetCustomRuleNotFound{}
+	if errors.As(err, &target) {
+		d.SetId("")
+		return nil
+	}
+
 	if err != nil {
 		return diag.FromErr(err)
 	}

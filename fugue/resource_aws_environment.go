@@ -193,6 +193,14 @@ func resourceAwsEnvironmentRead(ctx context.Context, d *schema.ResourceData, m i
 		env = resp.Payload
 		return nil
 	})
+
+	// If the resource is not found, remove it from local terraform state
+	target := &environments.GetEnvironmentNotFound{}
+	if errors.As(err, &target) {
+		d.SetId("")
+		return nil
+	}
+
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -347,6 +355,14 @@ func resourceAwsEnvironmentDelete(ctx context.Context, d *schema.ResourceData, m
 		}
 		return nil
 	})
+
+	// If the resource is not found, remove it from local terraform state
+	target := &environments.DeleteEnvironmentNotFound{}
+	if errors.As(err, &target) {
+		d.SetId("")
+		return nil
+	}
+
 	if err != nil {
 		return diag.FromErr(err)
 	}

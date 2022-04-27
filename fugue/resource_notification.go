@@ -2,6 +2,7 @@ package fugue
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	"github.com/fugue/fugue-client/client/notifications"
@@ -176,8 +177,10 @@ func resourceNotificationRead(ctx context.Context, d *schema.ResourceData, m int
 	if diags != nil {
 		return diags
 	}
+	// If the resource is not found, remove it from local terraform state
 	if notification == nil {
-		return diag.Errorf("Unable to locate notification with id '%s'.", d.Id())
+		d.SetId("")
+		return nil
 	}
 	if err := d.Set("name", notification.Name); err != nil {
 		return diag.FromErr(err)
@@ -276,6 +279,14 @@ func resourceNotificationDelete(ctx context.Context, d *schema.ResourceData, m i
 		}
 		return nil
 	})
+
+	// If the resource is not found, remove it from local terraform state
+	target := &notifications.DeleteNotificationNotFound{}
+	if errors.As(err, &target) {
+		d.SetId("")
+		return nil
+	}
+
 	if err != nil {
 		return diag.FromErr(err)
 	}

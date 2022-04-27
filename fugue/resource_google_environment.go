@@ -2,6 +2,7 @@ package fugue
 
 import (
 	"context"
+	"errors"
 	"log"
 	"sort"
 
@@ -159,6 +160,14 @@ func resourceGoogleEnvironmentRead(ctx context.Context, d *schema.ResourceData, 
 		env = resp.Payload
 		return nil
 	})
+
+	// If the resource is not found, remove it from local terraform state
+	target := &environments.GetEnvironmentNotFound{}
+	if errors.As(err, &target) {
+		d.SetId("")
+		return nil
+	}
+
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -274,6 +283,14 @@ func resourceGoogleEnvironmentDelete(ctx context.Context, d *schema.ResourceData
 		}
 		return nil
 	})
+
+	// If the resource is not found, remove it from local terraform state
+	target := &environments.DeleteEnvironmentNotFound{}
+	if errors.As(err, &target) {
+		d.SetId("")
+		return nil
+	}
+
 	if err != nil {
 		return diag.FromErr(err)
 	}

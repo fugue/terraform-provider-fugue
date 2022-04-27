@@ -2,6 +2,7 @@ package fugue
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/fugue/fugue-client/client/rule_waivers"
@@ -171,6 +172,14 @@ func resourceRuleWaiverRead(ctx context.Context, d *schema.ResourceData, m inter
 		waiver = resp.Payload
 		return nil
 	})
+
+	// If the resource is not found, remove it from local terraform state
+	target := &rule_waivers.GetRuleWaiverNotFound{}
+	if errors.As(err, &target) {
+		d.SetId("")
+		return nil
+	}
+
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -265,6 +274,14 @@ func resourceRuleWaiverDelete(ctx context.Context, d *schema.ResourceData, m int
 		}
 		return nil
 	})
+
+	// If the resource is not found, remove it from local terraform state
+	target := &rule_waivers.GetRuleWaiverNotFound{}
+	if errors.As(err, &target) {
+		d.SetId("")
+		return nil
+	}
+
 	if err != nil {
 		return diag.FromErr(err)
 	}
