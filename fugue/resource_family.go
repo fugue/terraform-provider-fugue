@@ -2,6 +2,7 @@ package fugue
 
 import (
 	"context"
+	"errors"
 
 	"github.com/fugue/fugue-client/client/families"
 	"github.com/fugue/fugue-client/models"
@@ -126,6 +127,14 @@ func resourceFamilyRead(ctx context.Context, d *schema.ResourceData, m interface
 		family = resp.Payload
 		return nil
 	})
+
+	// If the resource is not found, remove it from local terraform state
+	target := &families.GetFamilyNotFound{}
+	if errors.As(err, &target) {
+		d.SetId("")
+		return nil
+	}
+
 	if err != nil {
 		return diag.FromErr(err)
 	}
