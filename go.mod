@@ -10,9 +10,8 @@ require (
 	github.com/go-openapi/strfmt v0.21.2
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
-	github.com/hashicorp/hcl/v2 v2.10.0 // indirect
 	github.com/hashicorp/terraform-plugin-docs v0.8.0
-	github.com/hashicorp/terraform-plugin-sdk/v2 v2.10.1
+	github.com/hashicorp/terraform-plugin-sdk/v2 v2.16.0
 	github.com/jhump/protoreflect v1.6.1 // indirect
 	github.com/posener/complete v1.2.1 // indirect
 	github.com/ryanuber/go-glob v1.0.0
