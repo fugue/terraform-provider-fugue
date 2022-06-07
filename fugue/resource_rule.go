@@ -184,6 +184,9 @@ func resourceRuleRead(ctx context.Context, d *schema.ResourceData, m interface{}
 	if err := d.Set("severity", rule.Severity); err != nil {
 		return diag.FromErr(err)
 	}
+	if err := d.Set("status", rule.Status); err != nil {
+		return diag.FromErr(err)
+	}
 
 	return diags
 }
