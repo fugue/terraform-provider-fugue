@@ -23,10 +23,10 @@ data "fugue_aws_types" "all" {
 
 ### Optional
 
+- **beta** (Boolean)
 - **govcloud** (Boolean)
 - **id** (String) The ID of this resource.
 - **region** (String)
-- **beta** (Boolean) Whether to include beta resources, default false.
 
 ### Read-Only
 

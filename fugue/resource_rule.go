@@ -63,6 +63,11 @@ func resourceRule() *schema.Resource {
 				Type:        schema.TypeString,
 				Required:    true,
 			},
+			"status": {
+				Description: "Status of the custom rule. One of: ENABLED, DISABLED.",
+				Type:        schema.TypeString,
+				Optional:    true,
+			},
 		},
 	}
 }
@@ -111,7 +116,13 @@ func resourceRuleCreate(ctx context.Context, d *schema.ResourceData, m interface
 	}
 
 	d.SetId(ruleID)
-	resourceRuleRead(ctx, d, m)
+	if d.Get("status").(string) != "ENABLED" {
+		// The API does not support creating a rule with status = "DISABLED", so we need
+		// a separate update call.
+		resourceRuleUpdate(ctx, d, m)
+	} else {
+		resourceRuleRead(ctx, d, m)
+	}
 	return diags
 }
 
@@ -173,6 +184,9 @@ func resourceRuleRead(ctx context.Context, d *schema.ResourceData, m interface{}
 	if err := d.Set("severity", rule.Severity); err != nil {
 		return diag.FromErr(err)
 	}
+	if err := d.Set("status", rule.Status); err != nil {
+		return diag.FromErr(err)
+	}
 
 	return diags
 }
@@ -189,6 +203,7 @@ func resourceRuleUpdate(ctx context.Context, d *schema.ResourceData, m interface
 	params.Rule.Severity = d.Get("severity").(string)
 	params.Rule.ResourceType = d.Get("resource_type").(string)
 	params.Rule.RuleText = d.Get("rule_text").(string)
+	params.Rule.Status = d.Get("status").(string)
 
 	err := resource.Retry(EnvironmentRetryTimeout, func() *resource.RetryError {
 		_, err := client.CustomRules.UpdateCustomRule(params, client.Auth)

@@ -16,7 +16,7 @@ the [Fugue](https://www.fugue.co/) API.
 terraform {
   required_providers {
     fugue = {
-      version = "0.0.6"
+      version = "0.0.10"
       source  = "fugue/fugue"
     }
   }
