@@ -8,12 +8,11 @@ github.com/Masterminds/sprig/v3
 github.com/PuerkitoBio/purell
 # github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
 github.com/PuerkitoBio/urlesc
-# github.com/agext/levenshtein v1.2.2
+# github.com/agext/levenshtein v1.2.3
 github.com/agext/levenshtein
 # github.com/apparentlymart/go-textseg/v13 v13.0.0
 github.com/apparentlymart/go-textseg/v13/textseg
 # github.com/armon/go-radix v1.0.0
-## explicit
 github.com/armon/go-radix
 # github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 github.com/asaskevich/govalidator
@@ -21,10 +20,9 @@ github.com/asaskevich/govalidator
 github.com/bgentry/speakeasy
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/fatih/color v1.10.0
-## explicit
+# github.com/fatih/color v1.13.0
 github.com/fatih/color
-# github.com/fugue/fugue-client v0.16.1-0.20211005043439-349b701f0ad5
+# github.com/fugue/fugue-client v0.19.2
 ## explicit
 github.com/fugue/fugue-client/client
 github.com/fugue/fugue-client/client/audit_log
@@ -36,6 +34,7 @@ github.com/fugue/fugue-client/client/groups
 github.com/fugue/fugue-client/client/invites
 github.com/fugue/fugue-client/client/metadata
 github.com/fugue/fugue-client/client/notifications
+github.com/fugue/fugue-client/client/rule_bundles
 github.com/fugue/fugue-client/client/rule_waivers
 github.com/fugue/fugue-client/client/scans
 github.com/fugue/fugue-client/client/users
@@ -93,10 +92,8 @@ github.com/google/go-cmp/cmp/internal/flags
 github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
 # github.com/google/uuid v1.3.0
-## explicit
 github.com/google/uuid
 # github.com/hashicorp/errwrap v1.1.0
-## explicit
 github.com/hashicorp/errwrap
 # github.com/hashicorp/go-checkpoint v0.5.0
 github.com/hashicorp/go-checkpoint
@@ -109,7 +106,7 @@ github.com/hashicorp/go-cty/cty/gocty
 github.com/hashicorp/go-cty/cty/json
 github.com/hashicorp/go-cty/cty/msgpack
 github.com/hashicorp/go-cty/cty/set
-# github.com/hashicorp/go-hclog v0.16.1
+# github.com/hashicorp/go-hclog v1.0.0
 github.com/hashicorp/go-hclog
 # github.com/hashicorp/go-multierror v1.1.1
 github.com/hashicorp/go-multierror
@@ -136,7 +133,6 @@ github.com/hashicorp/hc-install/product
 github.com/hashicorp/hc-install/releases
 github.com/hashicorp/hc-install/src
 # github.com/hashicorp/hcl/v2 v2.10.0
-## explicit
 github.com/hashicorp/hcl/v2
 github.com/hashicorp/hcl/v2/ext/customdecode
 github.com/hashicorp/hcl/v2/hclsyntax
@@ -232,12 +228,10 @@ github.com/oklog/ulid
 github.com/opentracing/opentracing-go
 github.com/opentracing/opentracing-go/ext
 github.com/opentracing/opentracing-go/log
-# github.com/posener/complete v1.2.1
-## explicit
+# github.com/posener/complete v1.2.3
 github.com/posener/complete
 github.com/posener/complete/cmd
 github.com/posener/complete/cmd/install
-github.com/posener/complete/match
 # github.com/russross/blackfriday v1.6.0
 github.com/russross/blackfriday
 # github.com/ryanuber/go-glob v1.0.0
@@ -245,7 +239,7 @@ github.com/russross/blackfriday
 github.com/ryanuber/go-glob
 # github.com/shopspring/decimal v1.2.0
 github.com/shopspring/decimal
-# github.com/spf13/cast v1.3.1
+# github.com/spf13/cast v1.4.1
 github.com/spf13/cast
 # github.com/vmihailenco/msgpack v4.0.4+incompatible
 github.com/vmihailenco/msgpack
@@ -258,7 +252,7 @@ github.com/zclconf/go-cty/cty/function/stdlib
 github.com/zclconf/go-cty/cty/gocty
 github.com/zclconf/go-cty/cty/json
 github.com/zclconf/go-cty/cty/set
-# go.mongodb.org/mongo-driver v1.8.3
+# go.mongodb.org/mongo-driver v1.9.0
 go.mongodb.org/mongo-driver/bson
 go.mongodb.org/mongo-driver/bson/bsoncodec
 go.mongodb.org/mongo-driver/bson/bsonoptions
@@ -266,7 +260,7 @@ go.mongodb.org/mongo-driver/bson/bsonrw
 go.mongodb.org/mongo-driver/bson/bsontype
 go.mongodb.org/mongo-driver/bson/primitive
 go.mongodb.org/mongo-driver/x/bsonx/bsoncore
-# golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
+# golang.org/x/crypto v0.0.0-20211108221036-ceb1ce70b4fa
 golang.org/x/crypto/bcrypt
 golang.org/x/crypto/blowfish
 golang.org/x/crypto/cast5
@@ -278,7 +272,7 @@ golang.org/x/crypto/openpgp/packet
 golang.org/x/crypto/openpgp/s2k
 golang.org/x/crypto/pbkdf2
 golang.org/x/crypto/scrypt
-# golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd
+# golang.org/x/net v0.0.0-20220403103023-749bd193bc2b
 golang.org/x/net/context
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2
@@ -286,7 +280,7 @@ golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
 golang.org/x/net/trace
-# golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e
+# golang.org/x/sys v0.0.0-20220406163625-3f8b81556e12
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 # golang.org/x/text v0.3.7
@@ -296,7 +290,6 @@ golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
 golang.org/x/text/width
 # google.golang.org/appengine v1.6.7
-## explicit
 google.golang.org/appengine
 google.golang.org/appengine/datastore
 google.golang.org/appengine/datastore/internal/cloudkey
@@ -308,10 +301,9 @@ google.golang.org/appengine/internal/datastore
 google.golang.org/appengine/internal/log
 google.golang.org/appengine/internal/modules
 google.golang.org/appengine/internal/remote_api
-# google.golang.org/genproto v0.0.0-20210604141403-392c879c8b08
-## explicit
+# google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa
 google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.38.0
+# google.golang.org/grpc v1.44.0
 google.golang.org/grpc
 google.golang.org/grpc/attributes
 google.golang.org/grpc/backoff
@@ -323,6 +315,7 @@ google.golang.org/grpc/binarylog/grpc_binarylog_v1
 google.golang.org/grpc/codes
 google.golang.org/grpc/connectivity
 google.golang.org/grpc/credentials
+google.golang.org/grpc/credentials/insecure
 google.golang.org/grpc/encoding
 google.golang.org/grpc/encoding/proto
 google.golang.org/grpc/grpclog
@@ -360,7 +353,7 @@ google.golang.org/grpc/serviceconfig
 google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
-# google.golang.org/protobuf v1.26.0
+# google.golang.org/protobuf v1.27.1
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire
 google.golang.org/protobuf/internal/descfmt
